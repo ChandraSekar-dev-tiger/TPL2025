@@ -56,10 +56,12 @@ def get_masked_data(role):
     data_lst = []
     for patient_data in patients_list:
         if role == Role.ADMIN:
-            return data_lst.append(patient_data)
+            data_lst.append(patient_data)
         else:
             masked_data = {}
             for key, value in patient_data.items():
+                # if role == Role.ADMIN:
+                #     pass
                 if role == Role.DOCTOR and key in ["SSN"]:
                     masked_data[key] = "***MASKED***"
                 elif role == Role.NURSE and key in ["SSN", "Medical Record"]:
