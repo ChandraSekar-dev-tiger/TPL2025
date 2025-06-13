@@ -53,3 +53,13 @@ Provide a concise, actionable insight in natural language based on this result:
 {result}
 """
 )
+
+reporting_prompt_template = ChatPromptTemplate.from_template(
+    """
+You are a reporting assistant. Create a brief, clear report based on the following:
+- Insight: {insight}
+- Query Result: {result}
+
+Format the report in plain English, starting with the insight, followed by key data points.
+"""
+)

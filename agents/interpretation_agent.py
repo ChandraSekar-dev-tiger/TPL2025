@@ -1,16 +1,9 @@
-import logging
 from typing import TypedDict, Optional
-from langchain.chat_models import AzureChatOpenAI
+from agents.llm_client import llm_client
 from prompts.prompt_templates import interpretation_prompt_template
-from core.config import AZURE_DEPLOYMENT_NAME
+import logging
 
 logger = logging.getLogger(__name__)
-
-llm = AzureChatOpenAI(
-    deployment_name=AZURE_DEPLOYMENT_NAME,
-    temperature=0.2,
-    model_name="gpt-4"
-)
 
 class InterpretationState(TypedDict):
     query: str
@@ -18,21 +11,20 @@ class InterpretationState(TypedDict):
     confidence: float
     code: str
     language: str
-    result: any
+    result: Optional[str]
     insight: Optional[str]
 
 def interpretation_agent(state: InterpretationState) -> InterpretationState:
+    prompt_text = interpretation_prompt_template.format_prompt(
+        code=state["code"],
+        result=state["result"],
+        query=state["query"]
+    )
     try:
-        prompt_text = interpretation_prompt_template.format_prompt(
-            intent=state["intent"],
-            result=state["result"]
-        )
-        response = llm.invoke(prompt_text)
-        insight = response.content.strip()
+        insight = llm_client.call_llm(prompt_text)
         state["insight"] = insight
-        logger.info("Interpretation (insight) generated.")
-        return state
+        logger.info("Interpretation generated")
     except Exception as e:
         logger.error(f"Interpretation failed: {e}")
-        state["insight"] = "Insight generation failed."
-        return state
+        state["insight"] = None
+    return state

@@ -1,21 +1,12 @@
+from typing import TypedDict, Optional
+from agents.llm_client import llm_client
+from prompts.prompt_templates import codegen_prompt_template
 import json
 import logging
-from typing import TypedDict, Optional
-
-from langchain_core.tools import tool
-from langchain.chat_models import AzureChatOpenAI
-from prompts.prompt_templates import codegen_prompt_template
-from core.config import AZURE_DEPLOYMENT_NAME
 
 logger = logging.getLogger(__name__)
 
-llm = AzureChatOpenAI(
-    deployment_name=AZURE_DEPLOYMENT_NAME,
-    temperature=0.2,
-    model_name="gpt-4"
-)
-
-class CodeGenState(TypedDict):
+class CodegenState(TypedDict):
     query: str
     intent: str
     confidence: float
@@ -23,22 +14,20 @@ class CodeGenState(TypedDict):
     code: Optional[str]
     language: Optional[str]
 
-def code_generation_agent(state: CodeGenState) -> CodeGenState:
+def code_generation_agent(state: CodegenState) -> CodegenState:
+    prompt_text = codegen_prompt_template.format_prompt(
+        query=state["query"], 
+        metadata=state["filtered_metadata"]
+    )
     try:
-        prompt_text = codegen_prompt_template.format_prompt(
-            intent=state["intent"],
-            filtered_metadata=json.dumps(state["filtered_metadata"], indent=2),
-            query=state["query"],
-            language="PySpark"
-        )
-        response = llm.invoke(prompt_text)
-        code = response.content.strip()
-        state["code"] = code
-        state["language"] = "pyspark"
-        logger.info("Code generation successful.")
-        return state
+        response = llm_client.call_llm(prompt_text)
+        # Assuming response is JSON with code and language fields
+        j = json.loads(response)
+        state["code"] = j.get("code", "")
+        state["language"] = j.get("language", "python")
+        logger.info(f"Generated code in {state['language']}")
     except Exception as e:
         logger.error(f"Code generation failed: {e}")
-        state["code"] = None
+        state["code"] = ""
         state["language"] = None
-        return state
+    return state

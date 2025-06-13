@@ -1,112 +1,143 @@
-import logging
+from typing import TypedDict, Optional, Any
 from langgraph.graph import StateGraph, END
 
 from agents.intent_agent import intent_recognition_agent, IntentState
-from agents.retrieval_agent import retrieval_agent, RetrievalState
-from agents.codegen_agent import code_generation_agent, CodeGenState
-from agents.execution_agent import execution_agent, ExecutionState
-from agents.interpretation_agent import interpretation_agent, InterpretationState
-from agents.reporting_agent import reporting_agent, ReportingState
+from agents.retrieval_agent import retrieval_agent
+from agents.codegen_agent import code_generation_agent
+from agents.execution_agent import execution_agent
+from agents.interpretation_agent import interpretation_agent
+from agents.reporting_agent import reporting_agent
 
-from core.config import ROLE
-import json
 
-logger = logging.getLogger(__name__)
+# Define the shared state schema across agents
+class AgentState(TypedDict):
+    query: str
+    session_id: Optional[str]
+    session_state: dict
+    report: Optional[dict]
 
-def run_agent_pipeline(user_query: str, user_role: str = ROLE, metadata: dict = None) -> dict:
-    graph = StateGraph()
 
-    # Initialize states
-    intent_state: IntentState = {"query": user_query, "intent": None, "confidence": None}
-    retrieval_state: RetrievalState = {"query": user_query, "intent": "", "confidence": 0.0, "filtered_metadata": None}
-    codegen_state: CodeGenState = {"query": user_query, "intent": "", "confidence": 0.0, "filtered_metadata": {}, "code": None, "language": None}
-    execution_state: ExecutionState = {"query": user_query, "intent": "", "confidence": 0.0, "code": "", "language": "", "result": None, "success": None, "error_message": None}
-    interpretation_state: InterpretationState = {"query": user_query, "intent": "", "confidence": 0.0, "code": "", "language": "", "result": None, "insight": None}
-    reporting_state: ReportingState = {"query": user_query, "insight": "", "result": None, "report_text": None}
+# Your main agent pipeline function
+async def run_agent_pipeline(user_query: str, session_state: dict) -> dict:
+    graph = StateGraph(AgentState)  # ✅ REQUIRED in LangGraph >= 0.0.38
 
-    # Add nodes
-    graph.add_node("intent_recognition", intent_recognition_agent)
-    graph.add_node("retrieval", retrieval_agent)
-    graph.add_node("code_generation", code_generation_agent)
-    graph.add_node("execution", execution_agent)
-    graph.add_node("interpretation", interpretation_agent)
-    graph.add_node("reporting", reporting_agent)
-    graph.set_entry_point("intent_recognition")
+    # Extract or initialize states from session_state dictionary
+    intent_state: IntentState = session_state.get("intent_state") or {
+        "query": user_query,
+        "intent": None,
+        "confidence": None
+    }
 
-    # Add edges
-    graph.add_edge("intent_recognition", "retrieval")
-    graph.add_edge("retrieval", "code_generation")
-    graph.add_edge("code_generation", "execution")
-    graph.add_edge("execution", "interpretation")
-    graph.add_edge("interpretation", "reporting")
-    graph.add_edge("reporting", END)
-
-    # Run pipeline stepwise manually, passing state dictionaries between steps
-
-    # Step 1: Intent Recognition
-    state = intent_recognition_agent(intent_state)
-    if state["intent"] == "unknown":
-        return {"report_text": "Sorry, I could not understand your query."}
-
-    # Step 2: Retrieval
-    retrieval_input = {
-        "query": state["query"],
-        "intent": state["intent"],
-        "confidence": state["confidence"],
+    retrieval_state = session_state.get("retrieval_state") or {
+        "query": user_query,
+        "intent": "",
+        "confidence": 0.0,
         "filtered_metadata": None
     }
-    retrieval_output = retrieval_agent(retrieval_input, metadata, user_role)
-    retrieval_output["query"] = state["query"]
-    retrieval_output["intent"] = state["intent"]
-    retrieval_output["confidence"] = state["confidence"]
 
-    # Step 3: Code Generation
-    codegen_input = {
-        "query": state["query"],
-        "intent": state["intent"],
-        "confidence": state["confidence"],
-        "filtered_metadata": retrieval_output["filtered_metadata"],
+    codegen_state = session_state.get("codegen_state") or {
+        "query": user_query,
+        "intent": "",
+        "confidence": 0.0,
+        "filtered_metadata": {},
         "code": None,
         "language": None
     }
-    codegen_output = code_generation_agent(codegen_input)
-    if not codegen_output["code"]:
-        return {"report_text": "Failed to generate code for your query."}
 
-    # Step 4: Execution
-    execution_input = {
-        "query": state["query"],
-        "intent": state["intent"],
-        "confidence": state["confidence"],
-        "code": codegen_output["code"],
-        "language": codegen_output["language"],
+    execution_state = session_state.get("execution_state") or {
+        "query": user_query,
+        "intent": "",
+        "confidence": 0.0,
+        "code": "",
+        "language": "",
         "result": None,
         "success": None,
         "error_message": None
     }
-    execution_output = execution_agent(execution_input)
-    if not execution_output["success"]:
-        return {"report_text": f"Execution error: {execution_output['error_message']}"}
 
-    # Step 5: Interpretation
-    interpretation_input = {
-        "query": state["query"],
-        "intent": state["intent"],
-        "confidence": state["confidence"],
-        "code": codegen_output["code"],
-        "language": codegen_output["language"],
-        "result": execution_output["result"],
+    interpretation_state = session_state.get("interpretation_state") or {
+        "query": user_query,
+        "intent": "",
+        "confidence": 0.0,
+        "code": "",
+        "language": "",
+        "result": None,
         "insight": None
     }
-    interpretation_output = interpretation_agent(interpretation_input)
 
-    # Step 6: Reporting
-    reporting_input = {
-        "query": state["query"],
-        "insight": interpretation_output["insight"],
-        "result": execution_output["result"],
+    reporting_state = session_state.get("reporting_state") or {
+        "query": user_query,
+        "insight": "",
+        "result": None,
         "report_text": None
     }
-    reporting_output = reporting_agent(reporting_input)
 
-    return reporting_output
+    # Step-by-step execution, no LangGraph runtime for now
+    intent_state = intent_recognition_agent(intent_state)
+    if intent_state["intent"] == "unknown":
+        return {"report": {"report_text": "Sorry, I could not understand your query."}}
+
+    retrieval_state = retrieval_agent({
+        "query": user_query,
+        "intent": intent_state["intent"],
+        "confidence": intent_state["confidence"],
+        "filtered_metadata": None,
+    })
+
+    codegen_state = code_generation_agent({
+        "query": user_query,
+        "intent": intent_state["intent"],
+        "confidence": intent_state["confidence"],
+        "filtered_metadata": retrieval_state.get("filtered_metadata", {}),
+        "code": None,
+        "language": None,
+    })
+
+    if not codegen_state.get("code"):
+        return {"report": {"report_text": "Failed to generate code for your query."}}
+
+    execution_state = execution_agent({
+        "query": user_query,
+        "intent": intent_state["intent"],
+        "confidence": intent_state["confidence"],
+        "code": codegen_state["code"],
+        "language": codegen_state["language"],
+        "result": None,
+        "success": None,
+        "error_message": None,
+    })
+
+    if not execution_state.get("success"):
+        return {"report": {"report_text": f"Execution error: {execution_state.get('error_message', 'Unknown error')}"}}
+
+    interpretation_state = interpretation_agent({
+        "query": user_query,
+        "intent": intent_state["intent"],
+        "confidence": intent_state["confidence"],
+        "code": codegen_state["code"],
+        "language": codegen_state["language"],
+        "result": execution_state["result"],
+        "insight": None,
+    })
+
+    reporting_state = reporting_agent({
+        "query": user_query,
+        "insight": interpretation_state["insight"],
+        "result": execution_state["result"],
+        "report_text": None,
+    })
+
+    # Update session state
+    updated_session_state = {
+        "intent_state": intent_state,
+        "retrieval_state": retrieval_state,
+        "codegen_state": codegen_state,
+        "execution_state": execution_state,
+        "interpretation_state": interpretation_state,
+        "reporting_state": reporting_state,
+    }
+
+    return {
+        "report": reporting_state,
+        "session_state": updated_session_state
+    }

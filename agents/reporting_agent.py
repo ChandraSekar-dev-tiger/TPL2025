@@ -1,21 +1,27 @@
-import logging
 from typing import TypedDict, Optional
+from agents.llm_client import llm_client
+from prompts.prompt_templates import reporting_prompt_template
+import logging
 
 logger = logging.getLogger(__name__)
 
 class ReportingState(TypedDict):
     query: str
-    insight: str
-    result: any
+    insight: Optional[str]
+    result: Optional[str]
     report_text: Optional[str]
 
 def reporting_agent(state: ReportingState) -> ReportingState:
+    prompt_text = reporting_prompt_template.format_prompt(
+        insight=state.get("insight", ""),
+        result=state.get("result", ""),
+        query=state.get("query", "")
+    )
     try:
-        report = f"Actionable Insight:\n{state['insight']}\n\nRaw Result:\n{str(state['result'])[:1000]}"
+        report = llm_client.call_llm(prompt_text)
         state["report_text"] = report
-        logger.info("Reporting complete.")
-        return state
+        logger.info("Report generated")
     except Exception as e:
         logger.error(f"Reporting failed: {e}")
         state["report_text"] = "Failed to generate report."
-        return state
+    return state
