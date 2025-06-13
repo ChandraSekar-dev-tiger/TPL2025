@@ -1,6 +1,8 @@
 import json
 import logging
 from typing import TypedDict, Optional
+
+from langchain_core.tools import tool
 from langchain.chat_models import AzureChatOpenAI
 from prompts.prompt_templates import intent_prompt_template
 from core.config import AZURE_DEPLOYMENT_NAME

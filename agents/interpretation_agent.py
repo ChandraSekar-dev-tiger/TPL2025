@@ -18,7 +18,7 @@ class InterpretationState(TypedDict):
     confidence: float
     code: str
     language: str
-    result: str
+    result: any
     insight: Optional[str]
 
 def interpretation_agent(state: InterpretationState) -> InterpretationState:
@@ -30,7 +30,7 @@ def interpretation_agent(state: InterpretationState) -> InterpretationState:
         response = llm.invoke(prompt_text)
         insight = response.content.strip()
         state["insight"] = insight
-        logger.info("Insight generated.")
+        logger.info("Interpretation (insight) generated.")
         return state
     except Exception as e:
         logger.error(f"Interpretation failed: {e}")

@@ -1,6 +1,8 @@
 import json
 import logging
 from typing import TypedDict, Optional
+
+from langchain_core.tools import tool
 from langchain.chat_models import AzureChatOpenAI
 from prompts.prompt_templates import codegen_prompt_template
 from core.config import AZURE_DEPLOYMENT_NAME
@@ -27,7 +29,7 @@ def code_generation_agent(state: CodeGenState) -> CodeGenState:
             intent=state["intent"],
             filtered_metadata=json.dumps(state["filtered_metadata"], indent=2),
             query=state["query"],
-            language="pyspark"
+            language="PySpark"
         )
         response = llm.invoke(prompt_text)
         code = response.content.strip()

@@ -1,6 +1,9 @@
+import logging
 from typing import TypedDict, Optional
+
 from core.metadata_filter import filter_metadata_by_role
-from core.config import DEFAULT_ROLE, load_metadata
+
+logger = logging.getLogger(__name__)
 
 class RetrievalState(TypedDict):
     query: str
@@ -8,15 +11,12 @@ class RetrievalState(TypedDict):
     confidence: float
     filtered_metadata: Optional[dict]
 
-# Load metadata once
-metadata = load_metadata("./data/metadata_with_roles.json")
-
-def retrieval_agent(state: RetrievalState) -> RetrievalState:
+def retrieval_agent(state: RetrievalState, metadata: dict, role: str) -> RetrievalState:
     try:
-        filtered_metadata = filter_metadata_by_role(metadata, DEFAULT_ROLE)
-        state["filtered_metadata"] = filtered_metadata
+        filtered = filter_metadata_by_role(metadata, role)
+        state["filtered_metadata"] = filtered
         return state
     except Exception as e:
-        print(f"Retrieval failed: {e}")
+        logger.error(f"Retrieval failed: {e}")
         state["filtered_metadata"] = {}
         return state
