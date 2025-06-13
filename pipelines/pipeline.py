@@ -138,6 +138,6 @@ async def run_agent_pipeline(user_query: str, session_state: dict) -> dict:
     }
 
     return {
-        "report": reporting_state,
+        "report": reporting_state.get("report_text", "No report_text"),
         "session_state": updated_session_state
     }
