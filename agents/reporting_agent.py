@@ -15,10 +15,12 @@ def reporting_agent(state: ReportingState) -> ReportingState:
     prompt_text = reporting_prompt_template.format_prompt(
         insight=state.get("insight", ""),
         result=state.get("result", ""),
-        query=state.get("query", "")
+        # query=state.get("query", "")
     )
     try:
-        report = llm_client.call_llm(prompt_text)
+        #TODO: 
+        # report = llm_client.call_llm(prompt_text)
+        report = "Markdown Report"
         state["report_text"] = report
         logger.info("Report generated")
     except Exception as e:

@@ -17,21 +17,6 @@ Return only JSON with keys 'intent' and 'confidence' (0-1).
 """
 )
 
-retrieval_prompt_template = ChatPromptTemplate.from_template(
-    """
-You are a retrieval agent.
-Based on the intent '{intent}' and role-based metadata, determine the relevant data fields and tables.
-
-Metadata (filtered by role):
-{filtered_metadata}
-
-User query:
-{query}
-
-Return JSON of relevant metadata keys and descriptions.
-"""
-)
-
 codegen_prompt_template = ChatPromptTemplate.from_template(
     """
 You are a healthcare data code generation agent.

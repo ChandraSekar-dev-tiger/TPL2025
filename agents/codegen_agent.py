@@ -16,13 +16,17 @@ class CodegenState(TypedDict):
 
 def code_generation_agent(state: CodegenState) -> CodegenState:
     prompt_text = codegen_prompt_template.format_prompt(
+        intent=state["intent"], 
+        filtered_metadata=state["filtered_metadata"],
+        language=state["language"],
         query=state["query"], 
-        metadata=state["filtered_metadata"]
     )
     try:
-        response = llm_client.call_llm(prompt_text)
-        # Assuming response is JSON with code and language fields
-        j = json.loads(response)
+        #TODO: change dummy llm return
+        j = {"code":"""total_sales_by_category = df.groupby("category")["sales"].sum().reset_index()"""}
+
+        # response = llm_client.call_llm(prompt_text)
+        # j = json.loads(response)
         state["code"] = j.get("code", "")
         state["language"] = j.get("language", "python")
         logger.info(f"Generated code in {state['language']}")

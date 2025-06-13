@@ -17,10 +17,27 @@ class ExecutionState(TypedDict):
 def execution_agent(state: ExecutionState) -> ExecutionState:
     try:
         if state["language"].lower() == "python":
-            # You can improve this sandboxing/execution method as needed
-            exec_globals = {}
-            exec(state["code"], exec_globals)
-            result = exec_globals.get("result", "No result variable set")
+            
+            #TODO:
+            import pandas as pd
+            data = {
+                "date": ["2025-06-01", "2025-06-02", "2025-06-03", "2025-06-04"],
+                "category": ["Electronics", "Clothing", "Electronics", "Books"],
+                "sales": [1500, 700, 1200, 300],
+                "units_sold": [3, 5, 2, 7],
+                "region": ["North", "South", "East", "West"]
+            }
+            df = pd.DataFrame(data)
+
+
+            # # You can improve this sandboxing/execution method as needed
+            # exec_globals = {}
+            # exec(state["code"], exec_globals)
+
+            # result = exec_globals.get("result", "No result variable set")
+
+            result = df
+
             state["result"] = result
             state["success"] = True
             logger.info("Python code executed successfully")

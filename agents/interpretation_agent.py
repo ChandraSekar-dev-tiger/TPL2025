@@ -16,12 +16,16 @@ class InterpretationState(TypedDict):
 
 def interpretation_agent(state: InterpretationState) -> InterpretationState:
     prompt_text = interpretation_prompt_template.format_prompt(
-        code=state["code"],
+        # code=state["code"],
+        intent=state["intent"],
         result=state["result"],
-        query=state["query"]
+        # query=state["query"]
     )
     try:
-        insight = llm_client.call_llm(prompt_text)
+        # TODO:
+        # insight = llm_client.call_llm(prompt_text)
+
+        insight = "beautifull data ;-)"
         state["insight"] = insight
         logger.info("Interpretation generated")
     except Exception as e:
