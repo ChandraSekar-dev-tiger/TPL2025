@@ -33,6 +33,7 @@ class AgentState(TypedDict):
     max_codegen_attempts: Optional[int]  # Maximum number of attempts allowed
     enable_logical_check: Optional[bool]  # Flag to enable/disable logical check
     logical_errors: Optional[list]  # List of logical errors found
+    syntax_errors: Optional[list]  # List of syntax errors found
 
 def should_continue(state: AgentState) -> Union[str, bool]:
     """Determine the next node based on the current state."""
@@ -52,15 +53,21 @@ def should_continue(state: AgentState) -> Union[str, bool]:
             return True
             
         elif current_node == "code_generation":
-            if not state.get("code"):
-                logger.warning("No code generated")
+            attempts = state.get("codegen_attempts", 0)
+            max_attempts = state.get("max_codegen_attempts", 3)
+            
+            # If we have an error message or no code, and we haven't exceeded max attempts
+            if (state.get("error_message") or not state.get("code")) and attempts < max_attempts:
+                logger.warning(f"Code generation failed on attempt {attempts}, retrying...")
+                return "code_generation"  # Retry code generation
+            elif attempts >= max_attempts:
+                logger.error("Maximum code generation attempts reached")
                 return "error_reporting"
             return True
             
         elif current_node == "logical_check":
             if state.get("enable_logical_check", False):
                 if state.get("logical_errors"):
-                    # If there are logical errors and we haven't exceeded max attempts
                     attempts = state.get("codegen_attempts", 0)
                     max_attempts = state.get("max_codegen_attempts", 3)
                     if attempts < max_attempts:
@@ -74,8 +81,16 @@ def should_continue(state: AgentState) -> Union[str, bool]:
         elif current_node == "execution":
             if not state.get("success", True):
                 error_msg = state.get("error_message", "")
-                if "SyntaxError" in error_msg or "IndentationError" in error_msg:
-                    # If there's a syntax error and we haven't exceeded max attempts
+                syntax_errors = state.get("syntax_errors", [])
+                
+                # Check for syntax errors in both error message and syntax_errors list
+                has_syntax_error = (
+                    any(err.get("type") in ["SyntaxError", "IndentationError"] for err in syntax_errors) or
+                    "SyntaxError" in error_msg or 
+                    "IndentationError" in error_msg
+                )
+                
+                if has_syntax_error:
                     attempts = state.get("codegen_attempts", 0)
                     max_attempts = state.get("max_codegen_attempts", 3)
                     if attempts < max_attempts:
@@ -157,11 +172,13 @@ async def run_agent_pipeline(user_query: str, session_state: dict, max_codegen_a
             }
         )
 
+        # Add edges for code generation with retry support
         graph.add_conditional_edges(
             "code_generation",
             should_continue,
             {
                 True: "logical_check" if enable_logical_check else "execution",
+                "code_generation": "code_generation",  # Add self-loop for retries
                 "error_reporting": "error_reporting"
             }
         )
@@ -172,6 +189,7 @@ async def run_agent_pipeline(user_query: str, session_state: dict, max_codegen_a
                 should_continue,
                 {
                     True: "execution",
+                    "code_generation": "code_generation",  # Add edge back to code generation
                     "error_reporting": "error_reporting"
                 }
             )
@@ -181,6 +199,7 @@ async def run_agent_pipeline(user_query: str, session_state: dict, max_codegen_a
             should_continue,
             {
                 True: "interpretation",
+                "code_generation": "code_generation",  # Add edge back to code generation for retries
                 "error_reporting": "error_reporting"
             }
         )
@@ -189,7 +208,7 @@ async def run_agent_pipeline(user_query: str, session_state: dict, max_codegen_a
         graph.add_edge("reporting", END)
         graph.add_edge("error_reporting", END)
 
-        # Initialize the state
+        # Initialize the state with session state values
         initial_state = {
             "query": user_query,
             "session_id": session_state.get("session_id"),
@@ -205,10 +224,11 @@ async def run_agent_pipeline(user_query: str, session_state: dict, max_codegen_a
             "insight": None,
             "report_text": None,
             "error_trace": None,
-            "codegen_attempts": 0,
+            "codegen_attempts": session_state.get("codegen_attempts", 0),  # Preserve attempts from session
             "max_codegen_attempts": max_codegen_attempts,
             "enable_logical_check": enable_logical_check,
-            "logical_errors": None
+            "logical_errors": session_state.get("logical_errors", []),  # Preserve logical errors
+            "syntax_errors": session_state.get("syntax_errors", [])  # Preserve syntax errors
         }
 
         # Run the graph
@@ -216,70 +236,36 @@ async def run_agent_pipeline(user_query: str, session_state: dict, max_codegen_a
         result = await compiled_graph.ainvoke(initial_state)
 
         # Update session state with the final state
-        updated_session_state = {
-            "session_id": session_state.get("session_id"),
-            "intent_state": {
-                "query": result["query"],
-                "intent": result["intent"],
-                "confidence": result["confidence"]
-            },
-            "retrieval_state": {
-                "query": result["query"],
-                "intent": result["intent"],
-                "confidence": result["confidence"],
-                "filtered_metadata": result["filtered_metadata"]
-            },
-            "codegen_state": {
-                "query": result["query"],
-                "intent": result["intent"],
-                "confidence": result["confidence"],
-                "filtered_metadata": result["filtered_metadata"],
-                "code": result["code"],
-                "language": result["language"],
-                "codegen_attempts": result["codegen_attempts"]
-            },
-            "logical_check_state": {
-                "code": result["code"],
-                "logical_errors": result["logical_errors"]
-            } if enable_logical_check else None,
-            "execution_state": {
-                "query": result["query"],
-                "intent": result["intent"],
-                "confidence": result["confidence"],
-                "code": result["code"],
-                "language": result["language"],
-                "result": result["result"],
-                "success": result["success"],
-                "error_message": result["error_message"]
-            },
-            "interpretation_state": {
-                "query": result["query"],
-                "intent": result["intent"],
-                "confidence": result["confidence"],
-                "code": result["code"],
-                "language": result["language"],
-                "result": result["result"],
-                "insight": result["insight"]
-            },
-            "reporting_state": {
-                "query": result["query"],
-                "insight": result["insight"],
-                "result": result["result"],
-                "report_text": result["report_text"]
-            }
+        session_state.update({
+            "codegen_attempts": result.get("codegen_attempts", 0),
+            "query": result.get("query"),
+            "intent": result.get("intent"),
+            "confidence": result.get("confidence"),
+            "filtered_metadata": result.get("filtered_metadata"),
+            "code": result.get("code"),
+            "language": result.get("language"),
+            "result": result.get("result"),
+            "success": result.get("success"),
+            "error_message": result.get("error_message"),
+            "insight": result.get("insight"),
+            "report_text": result.get("report_text"),
+            "error_trace": result.get("error_trace"),
+            "logical_errors": result.get("logical_errors", []),  # Preserve logical errors
+            "syntax_errors": result.get("syntax_errors", [])  # Preserve syntax errors
+        })
+
+        # Ensure we return the updated session state
+        return {
+            "report": {"report_text": result.get("report_text", "No report generated.")},
+            "session_state": session_state  # Return the updated session state
         }
 
-        return {
-            "report": {"report_text": result["report_text"]},
-            "session_state": updated_session_state
-        }
     except Exception as e:
         logger.error(f"Critical error in pipeline: {str(e)}")
-        error_trace = traceback.format_exc()
-        logger.error(f"Error trace: {error_trace}")
+        logger.error(f"Error trace: {traceback.format_exc()}")
         return {
             "report": {
-                "report_text": f"Critical pipeline error: {str(e)}\n\nTechnical Details:\n{error_trace}"
+                "report_text": f"Critical pipeline error: {str(e)}\n\nTechnical Details:\n{traceback.format_exc()}"
             },
-            "session_state": session_state
+            "session_state": session_state  # Return the original session state on error
         }

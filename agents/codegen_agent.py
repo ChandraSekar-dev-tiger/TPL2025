@@ -19,76 +19,50 @@ class CodegenState(TypedDict):
     current_node: Optional[str]
     codegen_attempts: Optional[int]
     max_codegen_attempts: Optional[int]
-    previous_errors: Optional[list]
+    logical_errors: Optional[list]
+    syntax_errors: Optional[list]
 
-def code_generation_agent(state: CodegenState) -> CodegenState:
-    logger.info("Starting code generation agent (attempt %d/%d)", 
-                state.get("codegen_attempts", 0) + 1,
-                state.get("max_codegen_attempts", 3))
-    logger.debug("Current state: %s", json.dumps(state, default=str))
-    
+async def code_generation_agent(state: CodegenState) -> CodegenState:
+    """Generate code based on the query and metadata."""
     try:
-        # Set current node
-        state["current_node"] = "code_generation"
+        # Get current attempt number
+        current_attempt = state.get("codegen_attempts", 0)
+        logger.info(f"Starting code generation agent (attempt {current_attempt + 1}/3)")
         
         # Increment attempt counter
-        state["codegen_attempts"] = state.get("codegen_attempts", 0) + 1
+        state["codegen_attempts"] = current_attempt + 1
         
-        # Check if we've exceeded max attempts
-        if state["codegen_attempts"] > state.get("max_codegen_attempts", 3):
-            logger.error("Maximum code generation attempts reached")
-            state["error_message"] = "Maximum code generation attempts reached"
-            state["error_trace"] = traceback.format_exc()
-            return state
-            
-        # Generate prompt with previous errors if any
-        logger.debug(f"print: {state.get("filtered_metadata", {})}")
-        prompt_text = codegen_prompt_template.format_prompt(
-            query=state.get("query", ""),
-            intent=state.get("intent", ""),
-            filtered_metadata=state.get("filtered_metadata", {}),
+        # Log errors for debugging
+        logical_errors = state.get("logical_errors", [])
+        syntax_errors = state.get("syntax_errors", [])
+        logger.info("Logical errors: %s", logical_errors)
+        logger.info("Syntax errors: %s", syntax_errors)
+        
+        # TODO: Replace with actual LLM call
+        # Example dummy code for LLM:
+        prompt = codegen_prompt_template.format(
+            query=state["query"],
+            intent=state.get("intent", "unknown"),
+            filtered_metadata=json.dumps(state.get("filtered_metadata", []), indent=2),
+            logical_errors=json.dumps(logical_errors, indent=2),
+            syntax_errors=json.dumps(syntax_errors, indent=2),
             language=state.get("language", "python"),
-            previous_errors=state.get("previous_errors", [])
         )
-        logger.debug("Generated prompt: %s", prompt_text)
+        # response = llm_client.call_llm(prompt_text)
+        # state["code"] = response.content
+        # state["language"] = "python"
+            
+        # For now, just return dummy code
+        logger.info("Generating code")
+        state["code"] = "print('Hello, World!')"
+        state["language"] = "python"
+        state["error_message"] = None
+        return state
         
-        try:
-            # TODO: Replace with actual LLM call
-            # response = llm_client.call_llm(prompt_text)
-            # result = json.loads(response)
-            
-            # Dummy response for testing
-            result = {
-                "code": "print('Hello, World!')",
-                "language": "python"
-            }
-            
-            state["code"] = result.get("code")
-            state["language"] = result.get("language")
-            state["error_message"] = None
-            state["error_trace"] = None
-            logger.info("Code generated successfully in %s", state["language"])
-            
-        except json.JSONDecodeError as e:
-            logger.error("Failed to parse LLM response: %s", str(e))
-            state["code"] = None
-            state["language"] = None
-            state["error_message"] = f"Failed to parse code generation response: {str(e)}"
-            state["error_trace"] = traceback.format_exc()
-        except Exception as e:
-            logger.error("LLM call failed: %s", str(e))
-            state["code"] = None
-            state["language"] = None
-            state["error_message"] = f"LLM call failed: {str(e)}"
-            state["error_trace"] = traceback.format_exc()
-            
     except Exception as e:
-        logger.error("Code generation failed: %s", str(e), exc_info=True)
-        state["code"] = None
-        state["language"] = None
-        state["error_message"] = f"Code generation failed: {str(e)}"
+        logger.error(f"Error in code generation: {str(e)}")
+        error_msg = f"Error in code generation: {str(e)}"
+        state["error_message"] = error_msg
         state["error_trace"] = traceback.format_exc()
-    
-    logger.info("Code generation agent completed. State updated with %s", 
-                "error" if state.get("error_message") else "success")
-    return state
+        state["code"] = None
+        return state

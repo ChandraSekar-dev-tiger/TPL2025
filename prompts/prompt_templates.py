@@ -23,7 +23,8 @@ You are a healthcare data code generation agent.
 Using the intent '{intent}' and filtered metadata:
 {filtered_metadata}
 
-previous_errors: {previous_errors}
+syntax_errors: {syntax_errors}
+logical_errors: {logical_errors}
 
 Generate {language} code that answers the user query:
 {query}
