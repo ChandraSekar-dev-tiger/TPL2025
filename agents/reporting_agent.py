@@ -27,13 +27,11 @@ def reporting_agent(state: ReportingState) -> ReportingState:
             result=state.get("result", ""),
         )
         try:
-            #TODO: 
-            # report = llm_client.call_llm(prompt_text)
-            report = f"Markdown Report: {prompt_text}"
+            report = llm_client.call_llm(prompt_text)
             state["report_text"] = report
             state["error_message"] = None
             state["error_trace"] = None
-            logger.info("Report generated")
+            logger.info(f"Report generated: {report}")
         except Exception as e:
             logger.error(f"LLM call failed: {str(e)}")
             state["report_text"] = "Failed to generate report."

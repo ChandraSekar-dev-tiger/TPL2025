@@ -58,13 +58,11 @@ def interpretation_agent(state: InterpretationState) -> InterpretationState:
         logger.debug("Generated prompt: %s", prompt_text)
         
         try:
-            # TODO:
-            # insight = llm_client.call_llm(prompt_text)
-            insight = "beautifull data ;-)"
+            insight = llm_client.call_llm(prompt_text)
             state["insight"] = insight
             state["error_message"] = None
             state["error_trace"] = None
-            logger.info("Interpretation generated successfully")
+            logger.info(f"Insights generated successfully: {insight}")
         except Exception as e:
             logger.error("LLM call failed: %s", str(e), exc_info=True)
             state["insight"] = None

@@ -39,14 +39,11 @@ def logical_check_agent(state: LogicalCheckState) -> LogicalCheckState:
             language=state.get("language", "python")
         )
 
-        # TODO: Replace this dummy logic with an actual LLM call, e.g.:
-        # response = llm_client.call_llm(prompt_text)
-        # logical_errors = json.loads(response)
-        # state["logical_errors"] = logical_errors
+        response = llm_client.call_llm(prompt_text)
+        logical_errors = json.loads(response)
+        state["logical_errors"] = logical_errors
+        # state["logical_errors"] = []
 
-        # Dummy: always pass logical check for now
-        state["logical_errors"] = []
-        logger.info("Logical check passed (dummy logic)")
         return state
 
     except Exception as e:

@@ -25,14 +25,9 @@ def intent_recognition_agent(state: IntentState) -> IntentState:
         
         prompt_text = intent_prompt_template.format_prompt(query=state["query"])
         try:
-            #TODO: change dummy llm return
-            j = {
-                "relevance": 1,
-                "reasoning": "Query is related to healthcare metrics"
-            }
-            
-            # llm_response = llm_client.call_llm(prompt_text)
-            # j = json.loads(llm_response)
+            llm_response = llm_client.call_llm(prompt_text)
+            j = json.loads(llm_response)
+            logging.info(f"TESTTTTTTTTTTT:{j}")
             state["relevance"] = j.get("relevance", 0)
             state["reasoning"] = j.get("reasoning", "")
             logger.info("Query relevance: %s", state["relevance"])
