@@ -17,8 +17,8 @@ logger = logging.getLogger(__name__)
 class AgentState(TypedDict):
     query: str
     session_id: Optional[str]
-    intent: Optional[str]
-    confidence: Optional[float]
+    relevance: Optional[int]
+    reasoning: Optional[str]
     filtered_metadata: Optional[dict]
     code: Optional[str]
     language: Optional[str]
@@ -41,8 +41,8 @@ def should_continue(state: AgentState) -> Union[str, bool]:
         current_node = state.get("current_node", "intent_recognition")
         
         if current_node == "intent_recognition":
-            if state.get("intent") == "unknown":
-                logger.warning("Unknown intent detected")
+            if state.get("relevance", 0) == 0:
+                logger.warning("Non-healthcare query detected")
                 return "error_reporting"
             return True
             
@@ -117,16 +117,19 @@ def create_error_report(state: AgentState) -> AgentState:
         error_msg = state.get("error_message", "Unknown error occurred")
         error_trace = state.get("error_trace", "")
         
-        if state.get("intent") == "unknown":
-            error_msg = "Sorry, I could not understand your query."
+        if state.get("relevance", 0) == 0:
+            reasoning = state.get("reasoning", "")
+            state["report_text"] = reasoning
+            logger.info(f"Non-healthcare query report: {reasoning}")
+            return state
         elif not state.get("code"):
             error_msg = "Failed to generate code for your query."
+            state["report_text"] = f"Error: {error_msg}"
+        else:
+            state["report_text"] = f"Error: {error_msg}"
+            if error_trace:
+                state["report_text"] += f"\n\nTechnical Details:\n{error_trace}"
         
-        report = f"Error: {error_msg}"
-        if error_trace:
-            report += f"\n\nTechnical Details:\n{error_trace}"
-        
-        state["report_text"] = report
         logger.error(f"Error report generated: {error_msg}")
         return state
     except Exception as e:
@@ -213,17 +216,17 @@ async def run_agent_pipeline(user_query: str, session_state: dict, max_codegen_a
             "query": user_query,
             "session_id": session_state.get("session_id"),
             "current_node": "intent_recognition",
-            "intent": None,
-            "confidence": None,
-            "filtered_metadata": None,
-            "code": None,
-            "language": None,
-            "result": None,
-            "success": None,
-            "error_message": None,
-            "insight": None,
-            "report_text": None,
-            "error_trace": None,
+            "relevance": session_state.get("relevance", 0),
+            "reasoning": session_state.get("reasoning", ""),
+            "filtered_metadata": session_state.get("filtered_metadata"),
+            "code": session_state.get("code"),
+            "language": session_state.get("language"),
+            "result": session_state.get("result"),
+            "success": session_state.get("success"),
+            "error_message": session_state.get("error_message"),
+            "insight": session_state.get("insight"),
+            "report_text": session_state.get("report_text"),
+            "error_trace": session_state.get("error_trace"),
             "codegen_attempts": session_state.get("codegen_attempts", 0),  # Preserve attempts from session
             "max_codegen_attempts": max_codegen_attempts,
             "enable_logical_check": enable_logical_check,
@@ -239,8 +242,8 @@ async def run_agent_pipeline(user_query: str, session_state: dict, max_codegen_a
         session_state.update({
             "codegen_attempts": result.get("codegen_attempts", 0),
             "query": result.get("query"),
-            "intent": result.get("intent"),
-            "confidence": result.get("confidence"),
+            "relevance": result.get("relevance", 0),
+            "reasoning": result.get("reasoning", ""),
             "filtered_metadata": result.get("filtered_metadata"),
             "code": result.get("code"),
             "language": result.get("language"),

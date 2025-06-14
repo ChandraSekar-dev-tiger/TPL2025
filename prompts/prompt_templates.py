@@ -3,17 +3,22 @@ from langchain.prompts import ChatPromptTemplate, PromptTemplate
 intent_prompt_template = ChatPromptTemplate.from_template(
     """
 You are an intent classifier for healthcare queries.
-Classify the intent of this user query into one of the categories:
-- aggregate_query
-- trend_analysis
-- comparison
-- general_query
-- unknown
+Determine if the query is relevant to healthcare based on these KPIs:
+- Patient outcomes and quality metrics
+- Clinical performance indicators
+- Healthcare utilization rates
+- Cost and financial metrics
+- Patient satisfaction scores
+- Operational efficiency metrics
+- Population health indicators
+- Healthcare access metrics
 
 User query:
 {query}
 
-Return only JSON with keys 'intent' and 'confidence' (0-1).
+Return JSON with these keys:
+- 'relevance': 1 if the query is healthcare-related, 0 if not
+- 'reasoning': A brief explanation of why the query is or isn't healthcare-relevant
 """
 )
 
