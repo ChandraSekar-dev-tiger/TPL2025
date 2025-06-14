@@ -6,6 +6,7 @@ import traceback
 from agents.intent_agent import intent_recognition_agent, IntentState
 from agents.retrieval_agent import retrieval_agent, RetrievalState
 from agents.codegen_agent import code_generation_agent, CodegenState
+from agents.logical_check_agent import logical_check_agent, LogicalCheckState
 from agents.execution_agent import execution_agent, ExecutionState
 from agents.interpretation_agent import interpretation_agent, InterpretationState
 from agents.reporting_agent import reporting_agent, ReportingState
@@ -26,16 +27,18 @@ class AgentState(TypedDict):
     error_message: Optional[str]
     insight: Optional[str]
     report_text: Optional[str]
-    error_trace: Optional[str]  # Added for detailed error tracking
+    error_trace: Optional[str]
     current_node: Optional[str]
+    codegen_attempts: Optional[int]  # Track number of code generation attempts
+    max_codegen_attempts: Optional[int]  # Maximum number of attempts allowed
+    enable_logical_check: Optional[bool]  # Flag to enable/disable logical check
+    logical_errors: Optional[list]  # List of logical errors found
 
 def should_continue(state: AgentState) -> Union[str, bool]:
     """Determine the next node based on the current state."""
     try:
-        # Get the current node from the state
         current_node = state.get("current_node", "intent_recognition")
         
-        # Different checks based on the current node
         if current_node == "intent_recognition":
             if state.get("intent") == "unknown":
                 logger.warning("Unknown intent detected")
@@ -54,10 +57,36 @@ def should_continue(state: AgentState) -> Union[str, bool]:
                 return "error_reporting"
             return True
             
+        elif current_node == "logical_check":
+            if state.get("enable_logical_check", False):
+                if state.get("logical_errors"):
+                    # If there are logical errors and we haven't exceeded max attempts
+                    attempts = state.get("codegen_attempts", 0)
+                    max_attempts = state.get("max_codegen_attempts", 3)
+                    if attempts < max_attempts:
+                        logger.warning("Logical errors found, returning to code generation")
+                        return "code_generation"
+                    else:
+                        logger.error("Maximum code generation attempts reached")
+                        return "error_reporting"
+            return True
+            
         elif current_node == "execution":
             if not state.get("success", True):
-                logger.warning(f"Operation failed: {state.get('error_message', 'Unknown error')}")
-                return "error_reporting"
+                error_msg = state.get("error_message", "")
+                if "SyntaxError" in error_msg or "IndentationError" in error_msg:
+                    # If there's a syntax error and we haven't exceeded max attempts
+                    attempts = state.get("codegen_attempts", 0)
+                    max_attempts = state.get("max_codegen_attempts", 3)
+                    if attempts < max_attempts:
+                        logger.warning("Syntax error found, returning to code generation")
+                        return "code_generation"
+                    else:
+                        logger.error("Maximum code generation attempts reached")
+                        return "error_reporting"
+                else:
+                    logger.warning(f"Execution failed: {error_msg}")
+                    return "error_reporting"
             return True
             
         return True
@@ -91,7 +120,7 @@ def create_error_report(state: AgentState) -> AgentState:
         state["error_trace"] = traceback.format_exc()
         return state
 
-async def run_agent_pipeline(user_query: str, session_state: dict) -> dict:
+async def run_agent_pipeline(user_query: str, session_state: dict, max_codegen_attempts: int = 3, enable_logical_check: bool = False) -> dict:
     try:
         # Initialize the graph with our combined state schema
         graph = StateGraph(AgentState)
@@ -100,6 +129,7 @@ async def run_agent_pipeline(user_query: str, session_state: dict) -> dict:
         graph.add_node("intent_recognition", intent_recognition_agent)
         graph.add_node("retrieval", retrieval_agent)
         graph.add_node("code_generation", code_generation_agent)
+        graph.add_node("logical_check", logical_check_agent)
         graph.add_node("execution", execution_agent)
         graph.add_node("interpretation", interpretation_agent)
         graph.add_node("reporting", reporting_agent)
@@ -131,10 +161,20 @@ async def run_agent_pipeline(user_query: str, session_state: dict) -> dict:
             "code_generation",
             should_continue,
             {
-                True: "execution",
+                True: "logical_check" if enable_logical_check else "execution",
                 "error_reporting": "error_reporting"
             }
         )
+
+        if enable_logical_check:
+            graph.add_conditional_edges(
+                "logical_check",
+                should_continue,
+                {
+                    True: "execution",
+                    "error_reporting": "error_reporting"
+                }
+            )
 
         graph.add_conditional_edges(
             "execution",
@@ -153,7 +193,7 @@ async def run_agent_pipeline(user_query: str, session_state: dict) -> dict:
         initial_state = {
             "query": user_query,
             "session_id": session_state.get("session_id"),
-            "current_node": "intent_recognition",  # Add current node tracking
+            "current_node": "intent_recognition",
             "intent": None,
             "confidence": None,
             "filtered_metadata": None,
@@ -164,7 +204,11 @@ async def run_agent_pipeline(user_query: str, session_state: dict) -> dict:
             "error_message": None,
             "insight": None,
             "report_text": None,
-            "error_trace": None
+            "error_trace": None,
+            "codegen_attempts": 0,
+            "max_codegen_attempts": max_codegen_attempts,
+            "enable_logical_check": enable_logical_check,
+            "logical_errors": None
         }
 
         # Run the graph
@@ -191,8 +235,13 @@ async def run_agent_pipeline(user_query: str, session_state: dict) -> dict:
                 "confidence": result["confidence"],
                 "filtered_metadata": result["filtered_metadata"],
                 "code": result["code"],
-                "language": result["language"]
+                "language": result["language"],
+                "codegen_attempts": result["codegen_attempts"]
             },
+            "logical_check_state": {
+                "code": result["code"],
+                "logical_errors": result["logical_errors"]
+            } if enable_logical_check else None,
             "execution_state": {
                 "query": result["query"],
                 "intent": result["intent"],

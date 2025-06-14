@@ -8,7 +8,7 @@ from core.logging_config import setup_logging
 from pipelines.pipeline import run_agent_pipeline
 
 # Set up logging
-setup_logging(log_level="INFO")
+setup_logging(log_level="DEBUG")
 
 logger = logging.getLogger(__name__)
 
