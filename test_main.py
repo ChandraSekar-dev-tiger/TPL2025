@@ -1,6 +1,13 @@
 import asyncio
+import logging
 from core.session_manager import create_session_id, get_session_state, save_session_state
+from core.logging_config import setup_logging
 from pipelines.pipeline import run_agent_pipeline
+
+# Set up logging
+setup_logging(log_level="DEBUG")
+
+logger = logging.getLogger(__name__)
 
 async def query_agent(data: dict):
     user_query = data.get("query", "")
@@ -28,15 +35,17 @@ async def query_agent(data: dict):
         "result": output.get("report", {"report_text": "No report generated."})
     }
 
+async def run_test():
+    test_input = {
+        "query": "Show me total sales by category",
+        "session_id": "test_session_001"
+    }
+    
+    logger.info("Starting test with query: %s", test_input["query"])
+    result = await query_agent(test_input)
+    logger.info("Test completed with result: %s", result)
+    print("\n=== Test Output ===")
+    print(result)
+
 if __name__ == "__main__":
-    async def run_test():
-        test_input = {
-            "query": "Show me sales by category last month",
-            "session_id": "test_session_001"
-        }
-
-        result = await query_agent(test_input)
-        print("=== Test Output ===")
-        print(result)
-
     asyncio.run(run_test())

@@ -2,7 +2,15 @@ from enum import Enum
 
 import pandas as pd
 import streamlit as st
+import asyncio
+import logging
+from core.logging_config import setup_logging
+from main import query_agent
 
+# Set up logging
+setup_logging(log_level="INFO")
+
+logger = logging.getLogger(__name__)
 
 # Define roles
 class Role(Enum):
@@ -122,3 +130,33 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+# Initialize session state
+if "session_id" not in st.session_state:
+    st.session_state.session_id = None
+
+# Query input
+user_query = st.text_input("Enter your query:")
+
+if st.button("Submit"):
+    if user_query:
+        try:
+            with st.spinner("Processing your query..."):
+                # Run the query
+                result = asyncio.run(query_agent({
+                    "query": user_query,
+                    "session_id": st.session_state.session_id
+                }))
+                
+                # Update session ID
+                st.session_state.session_id = result["session_id"]
+                
+                # Display results
+                st.success("Analysis complete!")
+                st.write(result["result"]["report_text"])
+                
+        except Exception as e:
+            logger.error("Error processing query: %s", str(e))
+            st.error(f"Error: {str(e)}")
+    else:
+        st.warning("Please enter a query.")

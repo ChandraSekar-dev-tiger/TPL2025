@@ -1,29 +1,57 @@
-from typing import TypedDict
-from prompts.prompt_templates import intent_prompt_template
+from typing import TypedDict, Optional
 from agents.llm_client import llm_client
-import json
 import logging
+import traceback
+import json
+from prompts.prompt_templates import intent_prompt_template
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("agents.intent_agent")
 
 class IntentState(TypedDict):
     query: str
-    intent: str
-    confidence: float
+    intent: Optional[str]
+    confidence: Optional[float]
+    error_message: Optional[str]
+    error_trace: Optional[str]
+    current_node: Optional[str]
 
 def intent_recognition_agent(state: IntentState) -> IntentState:
-    prompt_text = intent_prompt_template.format_prompt(query=state["query"])
+    logger.info("Starting intent recognition with query: %s", state.get("query", "No query provided"))
+    logger.debug("Current state: %s", json.dumps(state, default=str))
+    
     try:
-        #TODO: change dummy llm return
-        j = {"intent":"general query"}
-
-        # llm_response = llm_client.call_llm(prompt_text)
-        # j = json.loads(llm_response)
-        state["intent"] = j.get("intent", "unknown")
-        state["confidence"] = j.get("confidence", 0.0)
-        logger.info(f"Intent recognized: {state['intent']} with confidence {state['confidence']}")
+        # Set current node
+        state["current_node"] = "intent_recognition"
+        
+        prompt_text = intent_prompt_template.format_prompt(query=state["query"])
+        try:
+            #TODO: change dummy llm return
+            j = {"intent":"general query", "confidence": 0.95}
+            
+            # llm_response = llm_client.call_llm(prompt_text)
+            # j = json.loads(llm_response)
+            state["intent"] = j.get("intent", "unknown")
+            state["confidence"] = j.get("confidence", 0.0)
+            logger.info("Intent recognized: %s with confidence %s", state["intent"], state["confidence"])
+        except json.JSONDecodeError as e:
+            logger.error("Failed to parse LLM response: %s", str(e))
+            state["intent"] = "unknown"
+            state["confidence"] = 0.0
+            state["error_message"] = f"Failed to parse LLM response: {str(e)}"
+            state["error_trace"] = traceback.format_exc()
+        except Exception as e:
+            logger.error("LLM call failed: %s", str(e))
+            state["intent"] = "unknown"
+            state["confidence"] = 0.0
+            state["error_message"] = f"LLM call failed: {str(e)}"
+            state["error_trace"] = traceback.format_exc()
     except Exception as e:
-        logger.error(f"Intent recognition failed: {e}")
+        logger.error("Intent recognition failed: %s", str(e), exc_info=True)
         state["intent"] = "unknown"
         state["confidence"] = 0.0
+        state["error_message"] = f"Intent recognition failed: {str(e)}"
+        state["error_trace"] = traceback.format_exc()
+    
+    logger.info("Intent recognition completed. State updated with %s", 
+                "error" if state.get("error_message") else "success")
     return state
