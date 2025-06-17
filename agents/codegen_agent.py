@@ -37,17 +37,23 @@ async def code_generation_agent(state: CodegenState) -> CodegenState:
         syntax_errors = state.get("syntax_errors", [])
         logger.info("Logical errors: %s", logical_errors)
         logger.info("Syntax errors: %s", syntax_errors)
+
+        filtered_metadata = json.dumps(state.get("filtered_metadata", []), indent=2)
+        logger.info("===============================================================")
+        logger.info("Filtered metadata: %s", filtered_metadata)
+        logger.info("===============================================================")
         
         # TODO: Replace with actual LLM call
         # Example dummy code for LLM:
         prompt = codegen_prompt_template.format(
             query=state["query"],
             intent=state.get("intent", "unknown"),
-            filtered_metadata=json.dumps(state.get("filtered_metadata", []), indent=2),
+            filtered_metadata=filtered_metadata,
             logical_errors=json.dumps(logical_errors, indent=2),
             syntax_errors=json.dumps(syntax_errors, indent=2),
             language=state.get("language", "python"),
         )
+        logger.info("code gent prompt: %s", prompt)
         # response = llm_client.call_llm(prompt_text)
         # state["code"] = response.content
         # state["language"] = "python"

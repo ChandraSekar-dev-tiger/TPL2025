@@ -11,10 +11,14 @@ logger = logging.getLogger(__name__)
 
 async def query_agent(data: dict):
     user_query = data.get("query", "")
+    user_role = data.get("user_role", "")
     session_id = data.get("session_id")
 
     if not user_query:
         raise ValueError("Missing 'query' in request data")
+
+    if user_role not in ["managers", "non_clinical_staff", "administrative_staff"]:
+        raise ValueError("Invalid 'user_role'. Must be one of: managers, non_clinical_staff, administrative_staff")
 
     # Create a session if not provided
     if not session_id:
@@ -26,6 +30,7 @@ async def query_agent(data: dict):
     # Run the pipeline with session-aware state and enable logical checks
     output = await run_agent_pipeline(
         user_query, 
+        user_role,
         session_state,
         max_codegen_attempts=3,
         enable_logical_check=False  # Enable logical checks True, False
@@ -47,6 +52,7 @@ async def test_codegen_retries():
     # Test case 1: Query that should trigger codegen retries
     test_input = {
         "query": "number of patients in emrgency ward",  # This should trigger retries
+        "user_role": "non_clinical_staff",  # Valid user role
         "session_id": "test_session_retry_001"
     }
     

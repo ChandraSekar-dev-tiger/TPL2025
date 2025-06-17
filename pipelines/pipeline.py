@@ -16,6 +16,7 @@ logger = logging.getLogger(__name__)
 # Define the combined state schema that includes all agent states
 class AgentState(TypedDict):
     query: str
+    user_role: str
     session_id: Optional[str]
     relevance: Optional[int]
     reasoning: Optional[str]
@@ -138,7 +139,10 @@ def create_error_report(state: AgentState) -> AgentState:
         state["error_trace"] = traceback.format_exc()
         return state
 
-async def run_agent_pipeline(user_query: str, session_state: dict, max_codegen_attempts: int = 3, enable_logical_check: bool = False) -> dict:
+async def run_agent_pipeline(
+        user_query: str, user_role: str,
+        session_state: dict,
+        max_codegen_attempts: int = 3, enable_logical_check: bool = False) -> dict:
     try:
         # Initialize the graph with our combined state schema
         graph = StateGraph(AgentState)
@@ -214,6 +218,7 @@ async def run_agent_pipeline(user_query: str, session_state: dict, max_codegen_a
         # Initialize the state with session state values
         initial_state = {
             "query": user_query,
+            "user_role": user_role,
             "session_id": session_state.get("session_id"),
             "current_node": "intent_recognition",
             "relevance": session_state.get("relevance", 0),
@@ -242,6 +247,7 @@ async def run_agent_pipeline(user_query: str, session_state: dict, max_codegen_a
         session_state.update({
             "codegen_attempts": result.get("codegen_attempts", 0),
             "query": result.get("query"),
+            "user_role": result.get("user_role"),
             "relevance": result.get("relevance", 0),
             "reasoning": result.get("reasoning", ""),
             "filtered_metadata": result.get("filtered_metadata"),

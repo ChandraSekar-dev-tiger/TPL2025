@@ -12,6 +12,17 @@ AZURE_API_VERSION = os.getenv("AZURE_API_VERSION")
 AZURE_DEPLOYMENT_NAME = os.getenv("AZURE_DEPLOYMENT_NAME")
 EMBEDDING_MODEL = os.getenv("AZURE_EMBEDDING_MODEL")
 
+# Azure Embedding Model
+AOAI_ENDPOINT = os.getenv("AOAI_ENDPOINT")
+AOAI_KEY = os.getenv("AOAI_KEY")
+AOAI_API_VERSION = os.getenv("AOAI_API_VERSION")
+AOAI_EMBEDDING_MODEL_DEPLOYMENT = os.getenv("AOAI_EMBEDDING_MODEL_DEPLOYMENT")
+
+# Azure AI Search
+SEARCH_ENDPOINT =os.getenv("SEARCH_ENDPOINT")
+SEARCH_KEY =os.getenv("SEARCH_KEY")
+INDEX_NAME = os.getenv("INDEX_NAME")
+
 
 DATA_PATH = "/mnt/data/delta/"
 ROLE = "non_clinical_staff"
