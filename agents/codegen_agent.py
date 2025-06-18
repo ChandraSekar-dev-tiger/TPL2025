@@ -39,11 +39,7 @@ async def code_generation_agent(state: CodegenState) -> CodegenState:
         logger.info("Syntax errors: %s", syntax_errors)
 
         filtered_metadata = json.dumps(state.get("filtered_metadata", []), indent=2)
-        logger.info("===============================================================")
-        logger.info("Filtered metadata: %s", filtered_metadata)
-        logger.info("===============================================================")
         
-        # TODO: Replace with actual LLM call
         # Example dummy code for LLM:
         prompt = codegen_prompt_template.format(
             query=state["query"],
@@ -51,17 +47,17 @@ async def code_generation_agent(state: CodegenState) -> CodegenState:
             filtered_metadata=filtered_metadata,
             logical_errors=json.dumps(logical_errors, indent=2),
             syntax_errors=json.dumps(syntax_errors, indent=2),
-            language=state.get("language", "python"),
+            language=state.get("language", "sql"),
         )
-        logger.info("code gent prompt: %s", prompt)
-        # response = llm_client.call_llm(prompt_text)
-        # state["code"] = response.content
-        # state["language"] = "python"
+        response = llm_client.call_llm(prompt)
+        logger.info("code gen response: %s", response)
+        state["code"] = response
+        state["language"] = "sql"
             
         # For now, just return dummy code
         logger.info("Generating code")
-        state["code"] = "print('Hello, World!')"
-        state["language"] = "python"
+        state["code"] = "SELECT * FROM `dbx-azure-catalog`.code_claws.department_table LIMIT 10"
+        state["language"] = "sql"
         state["error_message"] = None
         return state
         

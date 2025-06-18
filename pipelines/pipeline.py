@@ -225,7 +225,7 @@ async def run_agent_pipeline(
             "reasoning": session_state.get("reasoning", ""),
             "filtered_metadata": session_state.get("filtered_metadata"),
             "code": session_state.get("code"),
-            "language": session_state.get("language"),
+            "language": session_state.get("language", "sql"),
             "result": session_state.get("result"),
             "success": session_state.get("success"),
             "error_message": session_state.get("error_message"),
