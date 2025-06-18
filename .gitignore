@@ -11,3 +11,5 @@ wheels/
 
 # Env Vars
 .env
+.env_v2
+.env_copy
