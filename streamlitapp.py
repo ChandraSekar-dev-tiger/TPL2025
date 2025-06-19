@@ -5,7 +5,7 @@ import logging
 import streamlit as st
 
 from core.logging_config import setup_logging
-from test_main import query_agent  # , test_codegen_retries
+from test_main import query_agent, test_codegen_retries
 
 # from enum import Enum
 
@@ -34,7 +34,7 @@ if st.button("Run Query"):
             with st.spinner("Processing your query..."):
                 # Run the query
                 result = asyncio.run(
-                    query_agent(
+                    test_codegen_retries(
                         {
                             "query": user_query,
                             "user_role": user_role,

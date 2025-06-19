@@ -82,7 +82,10 @@ async def test_codegen_retries(test_input):
     print(f"Report: {report_text}")
     print(f"Number of codegen attempts: {codegen_attempts}")
 
-    return {"result": {"report": report_text, "code": "SELECT * FROM TABLE LIMIT 10;"}}
+    code  = session_state.get("code", 0)
+    print(f"code: {code}")
+
+    return {"result": {"report": report_text, "code": code}}
 
     # # Add assertion to verify retries
     # assert codegen_attempts > 0, "Expected at least one codegen attempt"
@@ -93,7 +96,7 @@ async def run_tests(input_query=None):
     # Test case 1: Query that should trigger codegen retries
     if input_query is None:
         test_input = {
-            "query": "number of patients in emrgency ward",  # This should trigger retries
+            "query": "What is the average patient waiting time in emergency departments across all hospitals?",  # This should trigger retries
             "user_role": "non_clinical_staff",  # Valid user role
             "session_id": "test_session_retry_001",
         }

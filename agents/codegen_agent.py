@@ -13,7 +13,7 @@ from prompts.prompt_templates import codegen_prompt_template
 logger = logging.getLogger("agents.codegen_agent")
 
 with open(
-    "/mnt/d/TigerAnalytics/Hackathon/AI Enthusiast/TPL2025/metadata/NonClinical_sheets_data.json",
+    "./metadata/NonClinical_sheets_data.json",
     "r",
 ) as f:
     all_data_description = json.load(f)
