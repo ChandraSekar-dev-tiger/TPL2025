@@ -1,11 +1,23 @@
-from typing import TypedDict, Optional
+import difflib
+import json
+import logging
+import re
+import traceback
+from typing import Optional, TypedDict
+
+import pandas as pd
+
 from agents.llm_client import llm_client
 from prompts.prompt_templates import codegen_prompt_template
-import logging
-import traceback
-import json
 
 logger = logging.getLogger("agents.codegen_agent")
+
+with open(
+    "/mnt/d/TigerAnalytics/Hackathon/AI Enthusiast/TPL2025/metadata/NonClinical_sheets_data.json",
+    "r",
+) as f:
+    all_data_description = json.load(f)
+
 
 class CodegenState(TypedDict):
     query: str
@@ -22,45 +34,79 @@ class CodegenState(TypedDict):
     logical_errors: Optional[list]
     syntax_errors: Optional[list]
 
+
 async def code_generation_agent(state: CodegenState) -> CodegenState:
     """Generate code based on the query and metadata."""
     try:
         # Get current attempt number
         current_attempt = state.get("codegen_attempts", 0)
         logger.info(f"Starting code generation agent (attempt {current_attempt + 1}/3)")
-        
+
         # Increment attempt counter
         state["codegen_attempts"] = current_attempt + 1
-        
+
         # Log errors for debugging
         logical_errors = state.get("logical_errors", [])
         syntax_errors = state.get("syntax_errors", [])
         logger.info("Logical errors: %s", logical_errors)
         logger.info("Syntax errors: %s", syntax_errors)
 
-        filtered_metadata = json.dumps(state.get("filtered_metadata", []), indent=2)
-        
+        filtered_metadata_jsn = state.get("filtered_metadata", [])
+        filtered_metadata = json.dumps(filtered_metadata_jsn, indent=2)
+
+        # extract the table names from filtered data
+        table_names = list(
+            set([filtered_rec["table_name"] for filtered_rec in filtered_metadata_jsn])
+        )
+        # in the combined json filter for the extracted tables
+        table_name_description = {}
+        for table_name in table_names:
+            matches = difflib.get_close_matches(
+                table_name, all_data_description.keys(), n=1, cutoff=0.6
+            )
+            logger.info("Matching table name: %s", matches[0])
+            table_name_description["`dbx-azure-catalog`.code_claws." + matches[0]] = (
+                all_data_description[matches[0]]
+            )
+
+        # pass it as a table description in the prompt > pass to line 56
+        filtered_table_description = table_name_description
+
         # Example dummy code for LLM:
         prompt = codegen_prompt_template.format(
             query=state["query"],
             intent=state.get("intent", "unknown"),
             filtered_metadata=filtered_metadata,
+            table_description=filtered_table_description,
             logical_errors=json.dumps(logical_errors, indent=2),
             syntax_errors=json.dumps(syntax_errors, indent=2),
             language=state.get("language", "sql"),
         )
+        logger.info("Generating code")
         response = llm_client.call_llm(prompt)
         logger.info("code gen response: %s", response)
-        state["code"] = response
-        state["language"] = "sql"
-            
+
+        match = re.search(r"```sql(.*?)```", response, re.DOTALL)
+        if match:
+            query = match.group(1).strip()
+            logger.info("code gen clean response: %s", query)
+            state["code"] = query
+            state["language"] = "sql"
+            state["error_message"] = None
+
+        else:
+            print("No SQL query found.")
+            state["code"] = None
+            state["language"] = "sql"
+            state["error_message"] = "Format issue"
+
         # For now, just return dummy code
-        logger.info("Generating code")
-        state["code"] = "SELECT * FROM `dbx-azure-catalog`.code_claws.department_table LIMIT 10"
-        state["language"] = "sql"
-        state["error_message"] = None
+        # logger.info("Generating code")
+        # state["code"] = "SELECT * FROM `dbx-azure-catalog`.code_claws.department_table LIMIT 10"
+        # state["language"] = "sql"
+
         return state
-        
+
     except Exception as e:
         logger.error(f"Error in code generation: {str(e)}")
         error_msg = f"Error in code generation: {str(e)}"

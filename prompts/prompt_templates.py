@@ -25,8 +25,12 @@ Return JSON with these keys:
 codegen_prompt_template = ChatPromptTemplate.from_template(
     """
 You are a healthcare data code generation agent.
-Using the intent '{intent}' and filtered metadata:
+Using the intent '{intent}' and
+Top k KPIs:
 {filtered_metadata}
+
+These are the table and columns where the kpis are present:
+{table_description}
 
 syntax_errors: {syntax_errors}
 logical_errors: {logical_errors}

@@ -1,12 +1,14 @@
 import asyncio
 import logging
-from enum import Enum
 
-import pandas as pd
+# import pandas as pd
 import streamlit as st
 
 from core.logging_config import setup_logging
-from test_main import query_agent, test_codegen_retries
+from test_main import query_agent  # , test_codegen_retries
+
+# from enum import Enum
+
 
 st.set_page_config(layout="wide")
 
@@ -32,7 +34,7 @@ if st.button("Run Query"):
             with st.spinner("Processing your query..."):
                 # Run the query
                 result = asyncio.run(
-                    test_codegen_retries(
+                    query_agent(
                         {
                             "query": user_query,
                             "user_role": user_role,

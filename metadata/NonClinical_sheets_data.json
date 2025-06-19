@@ -1,0 +1,1027 @@
+{
+  "emergency_metrics_table": [
+    {
+      "Column Name": "date",
+      "Data Type": "object",
+      "Description": "Date of metric recording",
+      "Granularity": "Daily",
+      "Calculation": "Direct from ED logs"
+    },
+    {
+      "Column Name": "department_id",
+      "Data Type": "object",
+      "Description": "Unique identifier for emergency department",
+      "Granularity": "Department-level",
+      "Calculation": "Direct from hospital system"
+    },
+    {
+      "Column Name": "patient_arrival_count_monthly",
+      "Data Type": "int64",
+      "Description": "Total number of patient arrivals in the month",
+      "Granularity": "Monthly",
+      "Calculation": "Sum of patient arrivals for the month"
+    },
+    {
+      "Column Name": "patient_arrival_count_daily",
+      "Data Type": "object",
+      "Description": "Daily count of patient arrivals (JSON format)",
+      "Granularity": "Daily (nested)",
+      "Calculation": "Aggregated from daily patient logs, may include fractional values due to smoothing or averaging"
+    },
+    {
+      "Column Name": "avg_waiting_time_minutes_monthly",
+      "Data Type": "float64",
+      "Description": "Average waiting time (arrival to first treatment) in minutes (monthly)",
+      "Granularity": "Monthly",
+      "Calculation": "Average wait time per month"
+    },
+    {
+      "Column Name": "avg_waiting_time_minutes_daily",
+      "Data Type": "object",
+      "Description": "Daily average waiting times (JSON format)",
+      "Granularity": "Daily (nested)",
+      "Calculation": "Aggregated daily averages from ED system"
+    },
+    {
+      "Column Name": "door_to_doctor_time_minutes",
+      "Data Type": "float64",
+      "Description": "Average time from door to doctor in minutes",
+      "Granularity": "Monthly",
+      "Calculation": "Mean time from ED entry to first doctor seen"
+    },
+    {
+      "Column Name": "avg_length_of_stay_minutes_monthly",
+      "Data Type": "float64",
+      "Description": "Average length of stay in ED (monthly)",
+      "Granularity": "Monthly",
+      "Calculation": "Mean time spent by patients in ED"
+    },
+    {
+      "Column Name": "avg_length_of_stay_minutes_daily",
+      "Data Type": "object",
+      "Description": "Daily length of stay in ED (JSON format)",
+      "Granularity": "Daily (nested)",
+      "Calculation": "Aggregated daily stay durations, may include fractional values due to smoothing or averaging"
+    },
+    {
+      "Column Name": "lwbs_rate",
+      "Data Type": "float64",
+      "Description": "Left Without Being Seen (LWBS) rate (%)",
+      "Granularity": "Monthly",
+      "Calculation": "(# Left Without Being Seen / Total ED Patients) * 100"
+    },
+    {
+      "Column Name": "admission_rate",
+      "Data Type": "float64",
+      "Description": "Percentage of ED patients admitted to inpatient",
+      "Granularity": "Monthly",
+      "Calculation": "(# Admitted from ED / Total ED Patients) * 100"
+    },
+    {
+      "Column Name": "acuity_level_distribution",
+      "Data Type": "object",
+      "Description": "Distribution of patient acuity levels (JSON format)",
+      "Granularity": "Monthly",
+      "Calculation": "Proportions of patients by acuity level (Level 1\u00e2\u20ac\u201c5)"
+    },
+    {
+      "Column Name": "time_to_pain_management_min",
+      "Data Type": "float64",
+      "Description": "Time to first pain management (in minutes)",
+      "Granularity": "Monthly",
+      "Calculation": "Mean time to administer pain medication"
+    },
+    {
+      "Column Name": "time_to_ecg_min",
+      "Data Type": "float64",
+      "Description": "Time to first ECG (in minutes)",
+      "Granularity": "Monthly",
+      "Calculation": "Mean time to first ECG post-arrival"
+    },
+    {
+      "Column Name": "repeat_ed_visits_rate",
+      "Data Type": "float64",
+      "Description": "Rate of repeat visits to ED (%)",
+      "Granularity": "Monthly",
+      "Calculation": "(# Repeat Visits / Total Visits) * 100"
+    },
+    {
+      "Column Name": "patient_satisfaction_score",
+      "Data Type": "float64",
+      "Description": "Patient satisfaction score (scale of 1\u00e2\u20ac\u201c5)",
+      "Granularity": "Monthly",
+      "Calculation": "Average satisfaction score from surveys"
+    },
+    {
+      "Column Name": "bed_utilization_rate",
+      "Data Type": "float64",
+      "Description": "Emergency bed utilization rate (%)",
+      "Granularity": "Monthly",
+      "Calculation": "(Beds in Use / Total Beds) * 100"
+    },
+    {
+      "Column Name": "staff_utilization_rate",
+      "Data Type": "float64",
+      "Description": "ED staff utilization rate (%)",
+      "Granularity": "Monthly",
+      "Calculation": "(Staff in Use / Total Staff) * 100"
+    }
+  ],
+  "inpatient_metrics_table": [
+    {
+      "Column Name": "date",
+      "Data Type": "object",
+      "Description": "The reporting month for inpatient metrics",
+      "Granularity": "Monthly",
+      "Calculation": null
+    },
+    {
+      "Column Name": "ward_id",
+      "Data Type": "object",
+      "Description": "Unique identifier for the ward or unit",
+      "Granularity": "Ward",
+      "Calculation": null
+    },
+    {
+      "Column Name": "bed_occupancy_rate_monthly",
+      "Data Type": "float",
+      "Description": "Average percentage of beds occupied during the month",
+      "Granularity": "Monthly",
+      "Calculation": "(Occupied Bed Days / Available Bed Days) * 100"
+    },
+    {
+      "Column Name": "bed_occupancy_rate_daily",
+      "Data Type": "object",
+      "Description": "Dictionary of daily bed occupancy rates",
+      "Granularity": "Daily (nested)",
+      "Calculation": "Estimated daily occupancy percentages, may include fractional values due to smoothing or averaging"
+    },
+    {
+      "Column Name": "avg_length_of_stay_days",
+      "Data Type": "float",
+      "Description": "Average inpatient length of stay in days",
+      "Granularity": "Monthly",
+      "Calculation": "Total Patient Days / Number of Discharges"
+    },
+    {
+      "Column Name": "readmission_rate_30d",
+      "Data Type": "float",
+      "Description": "Percentage of patients readmitted within 30 days",
+      "Granularity": "Monthly",
+      "Calculation": "(30-Day Readmissions / Discharges) * 100"
+    },
+    {
+      "Column Name": "hai_rate",
+      "Data Type": "float",
+      "Description": "Healthcare-associated infection rate per 1,000 patient days",
+      "Granularity": "Monthly",
+      "Calculation": "(HAI Cases / Patient Days) * 1000"
+    },
+    {
+      "Column Name": "mortality_rate",
+      "Data Type": "float",
+      "Description": "Percentage of inpatient deaths",
+      "Granularity": "Monthly",
+      "Calculation": "(Inpatient Deaths / Total Admissions) * 100"
+    },
+    {
+      "Column Name": "patient_turnover_rate",
+      "Data Type": "float",
+      "Description": "Rate of patient admissions and discharges relative to capacity",
+      "Granularity": "Monthly",
+      "Calculation": "(Admissions + Discharges) / Average Bed Count"
+    },
+    {
+      "Column Name": "avg_discharge_time_min",
+      "Data Type": "float",
+      "Description": "Average time in minutes to complete patient discharge",
+      "Granularity": "Monthly",
+      "Calculation": "Mean discharge processing time per patient"
+    },
+    {
+      "Column Name": "nurse_to_patient_ratio",
+      "Data Type": "float",
+      "Description": "Average number of nurses per patient",
+      "Granularity": "Monthly",
+      "Calculation": "Total Nurses / Average Census"
+    },
+    {
+      "Column Name": "medication_error_rate",
+      "Data Type": "float",
+      "Description": "Rate of medication errors per 1,000 patient days",
+      "Granularity": "Monthly",
+      "Calculation": "(Medication Errors / Patient Days) * 1000"
+    },
+    {
+      "Column Name": "avg_daily_census_monthly",
+      "Data Type": "int",
+      "Description": "Average number of inpatients present per day",
+      "Granularity": "Monthly",
+      "Calculation": "Sum of Daily Patient Count / Days in Month"
+    },
+    {
+      "Column Name": "avg_daily_census_daily",
+      "Data Type": "object",
+      "Description": "Dictionary of daily inpatient census counts",
+      "Granularity": "Daily (nested)",
+      "Calculation": "Estimated daily patient census, may include fractional values due to smoothing or averaging"
+    },
+    {
+      "Column Name": "early_discharge_percentage",
+      "Data Type": "float",
+      "Description": "Percentage of patients discharged earlier than planned",
+      "Granularity": "Monthly",
+      "Calculation": "(Early Discharges / Total Discharges) * 100"
+    },
+    {
+      "Column Name": "patient_satisfaction_score",
+      "Data Type": "float",
+      "Description": "Average score from patient satisfaction surveys (1\u00e2\u20ac\u201c5 scale)",
+      "Granularity": "Monthly",
+      "Calculation": "Survey-based average score"
+    }
+  ],
+  "outpatient_metrics_table": [
+    {
+      "Column Name": "date",
+      "Data Type": "object",
+      "Description": "The reporting month for outpatient metrics",
+      "Granularity": "Monthly",
+      "Calculation": null
+    },
+    {
+      "Column Name": "clinic_id",
+      "Data Type": "object",
+      "Description": "Unique identifier for the outpatient clinic or department",
+      "Granularity": "Clinic",
+      "Calculation": null
+    },
+    {
+      "Column Name": "outpatient_visit_count_monthly",
+      "Data Type": "int",
+      "Description": "Total number of outpatient visits in the month",
+      "Granularity": "Monthly",
+      "Calculation": "Sum of daily outpatient visit counts"
+    },
+    {
+      "Column Name": "outpatient_visit_count_daily",
+      "Data Type": "object",
+      "Description": "Dictionary of estimated daily outpatient visit counts",
+      "Granularity": "Daily (nested)",
+      "Calculation": "Estimated daily values derived from operational data; may include fractional values due to smoothing or averaging"
+    },
+    {
+      "Column Name": "appointment_no_show_rate",
+      "Data Type": "float",
+      "Description": "Percentage of scheduled appointments missed by patients",
+      "Granularity": "Monthly",
+      "Calculation": "(No-shows / Scheduled Appointments) * 100"
+    },
+    {
+      "Column Name": "avg_consultation_time_min",
+      "Data Type": "float",
+      "Description": "Average time in minutes spent per outpatient consultation",
+      "Granularity": "Monthly",
+      "Calculation": "Total Consultation Time / Number of Consultations"
+    },
+    {
+      "Column Name": "referral_rate_specialists",
+      "Data Type": "float",
+      "Description": "Percentage of visits that resulted in a referral to a specialist",
+      "Granularity": "Monthly",
+      "Calculation": "(Referrals to Specialists / Total Visits) * 100"
+    },
+    {
+      "Column Name": "avg_wait_time_min",
+      "Data Type": "float",
+      "Description": "Average patient wait time in minutes before seeing a provider",
+      "Granularity": "Monthly",
+      "Calculation": "Average time from check-in to consultation"
+    },
+    {
+      "Column Name": "follow_up_completion_rate",
+      "Data Type": "float",
+      "Description": "Percentage of follow-up visits completed within recommended period",
+      "Granularity": "Monthly",
+      "Calculation": "(Completed Follow-ups / Scheduled Follow-ups) * 100"
+    },
+    {
+      "Column Name": "patient_satisfaction_score",
+      "Data Type": "float",
+      "Description": "Average patient satisfaction score (1\u00e2\u20ac\u201c5 scale)",
+      "Granularity": "Monthly",
+      "Calculation": "Survey-based average score"
+    },
+    {
+      "Column Name": "diagnostic_test_turnaround",
+      "Data Type": "float",
+      "Description": "Average time in hours to return diagnostic test results",
+      "Granularity": "Monthly",
+      "Calculation": "Average turnaround time from test order to result delivery"
+    },
+    {
+      "Column Name": "telehealth_usage_percentage",
+      "Data Type": "float",
+      "Description": "Percentage of outpatient consultations conducted via telehealth",
+      "Granularity": "Monthly",
+      "Calculation": "(Telehealth Consults / Total Consults) * 100"
+    }
+  ],
+  "surgery_metrics_table": [
+    {
+      "Column Name": "date",
+      "Data Type": "object",
+      "Description": "Date of metric measurement",
+      "Granularity": "Monthly",
+      "Calculation": "Direct from surgical records"
+    },
+    {
+      "Column Name": "surgery_type_id",
+      "Data Type": "object",
+      "Description": "Type/category of surgery (e.g., GEN, ORTH, NEU, etc.)",
+      "Granularity": "Surgery-type level",
+      "Calculation": "Direct from surgery categorization"
+    },
+    {
+      "Column Name": "surgery_count_monthly",
+      "Data Type": "int64",
+      "Description": "Total number of surgeries performed in the month",
+      "Granularity": "Surgery-type level",
+      "Calculation": "Sum of daily surgery counts for the month"
+    },
+    {
+      "Column Name": "surgery_count_daily",
+      "Data Type": "object",
+      "Description": "Dictionary with daily count of surgeries (JSON format)",
+      "Granularity": "Daily (nested)",
+      "Calculation": "Aggregated from daily surgery logs (stored as JSON), may include fractional values due to smoothing or averaging"
+    },
+    {
+      "Column Name": "surgery_cancellation_rate",
+      "Data Type": "float64",
+      "Description": "Percentage of surgeries cancelled",
+      "Granularity": "Surgery-type level",
+      "Calculation": "(# Cancelled / Total Scheduled) * 100"
+    },
+    {
+      "Column Name": "avg_surgery_duration_min",
+      "Data Type": "float64",
+      "Description": "Average duration of surgeries in minutes",
+      "Granularity": "Surgery-type level",
+      "Calculation": "Mean time from start to end of surgery"
+    },
+    {
+      "Column Name": "surgical_site_infection_rate",
+      "Data Type": "float64",
+      "Description": "Rate of surgical site infections",
+      "Granularity": "Surgery-type level",
+      "Calculation": "(# Infections / Total Surgeries) * 100"
+    },
+    {
+      "Column Name": "unplanned_return_rate",
+      "Data Type": "float64",
+      "Description": "Rate of patients returning unexpectedly after surgery",
+      "Granularity": "Surgery-type level",
+      "Calculation": "(# Unplanned Returns / Total Surgeries) * 100"
+    },
+    {
+      "Column Name": "post_surgery_mortality_rate",
+      "Data Type": "float64",
+      "Description": "Post-surgery mortality rate",
+      "Granularity": "Surgery-type level",
+      "Calculation": "(# Deaths / Total Surgeries) * 100"
+    },
+    {
+      "Column Name": "blood_transfusion_rate",
+      "Data Type": "float64",
+      "Description": "Rate of surgeries requiring blood transfusion",
+      "Granularity": "Surgery-type level",
+      "Calculation": "(# Requiring Transfusion / Total Surgeries) * 100"
+    },
+    {
+      "Column Name": "on_time_start_rate",
+      "Data Type": "float64",
+      "Description": "Percentage of surgeries that started on time",
+      "Granularity": "Surgery-type level",
+      "Calculation": "(# On-Time Starts / Total Surgeries) * 100"
+    },
+    {
+      "Column Name": "post_op_complication_rate",
+      "Data Type": "float64",
+      "Description": "Rate of complications after surgery",
+      "Granularity": "Surgery-type level",
+      "Calculation": "(# Complications / Total Surgeries) * 100"
+    },
+    {
+      "Column Name": "length_of_stay_post_surgery",
+      "Data Type": "float64",
+      "Description": "Average length of stay (in days) post-surgery",
+      "Granularity": "Surgery-type level",
+      "Calculation": "Mean hospital stay in days after surgery"
+    }
+  ],
+  "radiology_metrics_table": [
+    {
+      "Column Name": "date",
+      "Data Type": "object",
+      "Description": "Date of metric recording",
+      "Granularity": "Monthly",
+      "Calculation": "Direct from radiology logs"
+    },
+    {
+      "Column Name": "modality_type",
+      "Data Type": "object",
+      "Description": "Type of imaging modality (e.g., MRI, CT, XRAY, US, NM)",
+      "Granularity": "Modality-level",
+      "Calculation": "Direct from modality classification"
+    },
+    {
+      "Column Name": "studies_performed_count_monthly",
+      "Data Type": "int64",
+      "Description": "Total number of radiology studies performed in the month",
+      "Granularity": "Modality-level",
+      "Calculation": "Sum of daily study counts for the month"
+    },
+    {
+      "Column Name": "studies_performed_count_daily",
+      "Data Type": "object",
+      "Description": "Dictionary with daily count of radiology studies performed (JSON format)",
+      "Granularity": "Daily (nested)",
+      "Calculation": "Aggregated from daily imaging logs (stored as JSON), may include fractional values due to smoothing or averaging"
+    },
+    {
+      "Column Name": "avg_report_turnaround_time_hr",
+      "Data Type": "float64",
+      "Description": "Average turnaround time to generate radiology reports (in hours)",
+      "Granularity": "Modality-level",
+      "Calculation": "Average time from study to report availability"
+    },
+    {
+      "Column Name": "report_accuracy_rate",
+      "Data Type": "float64",
+      "Description": "Accuracy rate of radiology reports",
+      "Granularity": "Modality-level",
+      "Calculation": "(# Accurate Reports / Total Reports) * 100"
+    },
+    {
+      "Column Name": "avg_radiation_dose_mSv",
+      "Data Type": "float64",
+      "Description": "Average radiation dose delivered per study (in milliSieverts)",
+      "Granularity": "Modality-level",
+      "Calculation": "Mean radiation dose per procedure"
+    },
+    {
+      "Column Name": "equipment_utilization_rate",
+      "Data Type": "float64",
+      "Description": "Utilization rate of radiology equipment",
+      "Granularity": "Modality-level",
+      "Calculation": "(Time Equipment in Use / Total Time Available) * 100"
+    },
+    {
+      "Column Name": "avg_patient_wait_time_min",
+      "Data Type": "float64",
+      "Description": "Average time patients wait before imaging (in minutes)",
+      "Granularity": "Modality-level",
+      "Calculation": "Mean wait time per patient before imaging"
+    },
+    {
+      "Column Name": "repeat_study_rate",
+      "Data Type": "float64",
+      "Description": "Percentage of studies repeated due to quality or technical issues",
+      "Granularity": "Modality-level",
+      "Calculation": "(# Repeat Studies / Total Studies) * 100"
+    },
+    {
+      "Column Name": "emergency_imaging_completion_rate",
+      "Data Type": "float64",
+      "Description": "Percentage of emergency imaging completed within target time",
+      "Granularity": "Modality-level",
+      "Calculation": "(# Emergency Scans Completed in Time / Total Emergency Requests) * 100"
+    }
+  ],
+  "lab_metrics_table": [
+    {
+      "Column Name": "date",
+      "Data Type": "object",
+      "Description": "The reporting month for lab metrics",
+      "Granularity": "Monthly",
+      "Calculation": null
+    },
+    {
+      "Column Name": "test_category",
+      "Data Type": "object",
+      "Description": "Category or department of lab tests (e.g., HEMA, BIOC)",
+      "Granularity": "Lab Category",
+      "Calculation": null
+    },
+    {
+      "Column Name": "tests_performed_count_monthly",
+      "Data Type": "int",
+      "Description": "Total number of lab tests performed in the month",
+      "Granularity": "Monthly",
+      "Calculation": "Sum of daily test counts"
+    },
+    {
+      "Column Name": "tests_performed_count_daily",
+      "Data Type": "object",
+      "Description": "Dictionary of daily lab test counts",
+      "Granularity": "Daily(nested)",
+      "Calculation": "Estimated daily test volumes; values may be fractional due to averaging or smoothing"
+    },
+    {
+      "Column Name": "avg_test_turnaround_time_hr",
+      "Data Type": "float",
+      "Description": "Average turnaround time in hours for lab test results",
+      "Granularity": "Monthly",
+      "Calculation": "Total Time to Report / Number of Tests"
+    },
+    {
+      "Column Name": "test_error_rate",
+      "Data Type": "float",
+      "Description": "Percentage of tests with errors",
+      "Granularity": "Monthly",
+      "Calculation": "(Number of Test Errors / Total Tests) * 100"
+    },
+    {
+      "Column Name": "critical_value_reporting_rate",
+      "Data Type": "float",
+      "Description": "Percentage of critical lab values reported within target time",
+      "Granularity": "Monthly",
+      "Calculation": "(Critical Results Reported on Time / Total Critical Results) * 100"
+    },
+    {
+      "Column Name": "equipment_downtime_hours",
+      "Data Type": "float",
+      "Description": "Total hours lab equipment was non-operational",
+      "Granularity": "Monthly",
+      "Calculation": "Sum of downtime incidents for lab equipment"
+    },
+    {
+      "Column Name": "sample_rejection_rate",
+      "Data Type": "float",
+      "Description": "Percentage of samples rejected due to quality or procedural issues",
+      "Granularity": "Monthly",
+      "Calculation": "(Rejected Samples / Total Samples Collected) * 100"
+    },
+    {
+      "Column Name": "patient_test_coverage_pct",
+      "Data Type": "float",
+      "Description": "Percentage of admitted patients who received at least one lab test",
+      "Granularity": "Monthly",
+      "Calculation": "(Patients Tested / Total Admitted Patients) * 100"
+    }
+  ],
+  "pharmacy_metrics_table": [
+    {
+      "Column Name": "date",
+      "Data Type": "object",
+      "Description": "Date of metric measurement",
+      "Granularity": "Daily",
+      "Calculation": "Direct from source system"
+    },
+    {
+      "Column Name": "medication_type",
+      "Data Type": "object",
+      "Description": "Category/type of medication dispensed (e.g., ORAL, INJ, ONC)",
+      "Granularity": "Medication-type level",
+      "Calculation": "Direct from source system"
+    },
+    {
+      "Column Name": "dispensing_error_rate",
+      "Data Type": "float64",
+      "Description": "Percentage of errors during medication dispensing",
+      "Granularity": "Medication-type level",
+      "Calculation": "(# Dispensing Errors / Total Prescriptions) * 100"
+    },
+    {
+      "Column Name": "inventory_turnover_rate",
+      "Data Type": "float64",
+      "Description": "Rate at which inventory is cycled (Inventory Turnover)",
+      "Granularity": "Medication-type level",
+      "Calculation": "Cost of Goods Sold / Average Inventory"
+    },
+    {
+      "Column Name": "generic_medication_usage_pct",
+      "Data Type": "float64",
+      "Description": "Percentage of medications dispensed that are generics",
+      "Granularity": "Medication-type level",
+      "Calculation": "(# Generic Prescriptions / Total Prescriptions) * 100"
+    },
+    {
+      "Column Name": "stock_out_rate",
+      "Data Type": "float64",
+      "Description": "Percentage of times medication stock was unavailable",
+      "Granularity": "Medication-type level",
+      "Calculation": "(# Out of Stock Occurrences / Total Requests) * 100"
+    },
+    {
+      "Column Name": "avg_dispense_time_min",
+      "Data Type": "float64",
+      "Description": "Average time taken to dispense medication (in minutes)",
+      "Granularity": "Medication-type level",
+      "Calculation": "Average dispense time per prescription"
+    },
+    {
+      "Column Name": "protocol_compliance_rate",
+      "Data Type": "float64",
+      "Description": "Percentage compliance with pharmacy protocols",
+      "Granularity": "Medication-type level",
+      "Calculation": "(# Compliant Transactions / Total Transactions) * 100"
+    },
+    {
+      "Column Name": "patient_counseling_rate",
+      "Data Type": "float64",
+      "Description": "Percentage of patients who received counseling with medication",
+      "Granularity": "Medication-type level",
+      "Calculation": "(# Counseled Patients / Total Patients) * 100"
+    },
+    {
+      "Column Name": "adverse_drug_reaction_rate",
+      "Data Type": "float64",
+      "Description": "Percentage of adverse drug reactions reported",
+      "Granularity": "Medication-type level",
+      "Calculation": "(# Adverse Reactions / Total Medications Dispensed) * 100"
+    }
+  ],
+  " icu_metrics_table": [
+    {
+      "Column Name": "date",
+      "Data Type": "object",
+      "Description": "The reporting month for ICU metrics",
+      "Granularity": "Monthly",
+      "Calculation": null
+    },
+    {
+      "Column Name": "icu_id",
+      "Data Type": "object",
+      "Description": "Unique identifier for the ICU unit",
+      "Granularity": "ICU",
+      "Calculation": null
+    },
+    {
+      "Column Name": "bed_occupancy_rate_monthly",
+      "Data Type": "float",
+      "Description": "Average percentage of occupied ICU beds in the month",
+      "Granularity": "Monthly",
+      "Calculation": "(Occupied Bed Days / Available Bed Days) * 100"
+    },
+    {
+      "Column Name": "bed_occupancy_rate_daily",
+      "Data Type": "object",
+      "Description": "Dictionary of daily ICU bed occupancy rates",
+      "Granularity": "Daily(nested)",
+      "Calculation": "Raw daily occupancy percentages, may include fractional values due to smoothing or averaging"
+    },
+    {
+      "Column Name": "avg_length_of_stay_days",
+      "Data Type": "float",
+      "Description": "Average length of stay in ICU in days",
+      "Granularity": "Monthly",
+      "Calculation": "Total ICU Days / Number of Discharges"
+    },
+    {
+      "Column Name": "ventilator_associated_pneumonia_rate",
+      "Data Type": "float",
+      "Description": "Rate of VAP cases per 1,000 ventilator days",
+      "Granularity": "Monthly",
+      "Calculation": "(VAP Cases / Ventilator Days) * 1000"
+    },
+    {
+      "Column Name": "icu_mortality_rate",
+      "Data Type": "float",
+      "Description": "Percentage of ICU patients who died",
+      "Granularity": "Monthly",
+      "Calculation": "(ICU Deaths / ICU Admissions) * 100"
+    },
+    {
+      "Column Name": "nurse_to_patient_ratio",
+      "Data Type": "float",
+      "Description": "Ratio of nurses to patients in the ICU",
+      "Granularity": "Monthly",
+      "Calculation": "Number of Nurses / Number of Patients"
+    },
+    {
+      "Column Name": "time_to_antibiotic_admin_min",
+      "Data Type": "float",
+      "Description": "Average time in minutes to administer antibiotics",
+      "Granularity": "Monthly",
+      "Calculation": "Average time from order to administration"
+    },
+    {
+      "Column Name": "clabsi_rate",
+      "Data Type": "float",
+      "Description": "Central line-associated bloodstream infection rate per 1,000 line days",
+      "Granularity": "Monthly",
+      "Calculation": "(CLABSI Cases / Line Days) * 1000"
+    },
+    {
+      "Column Name": "icu_readmission_rate_48h",
+      "Data Type": "float",
+      "Description": "Percentage of patients readmitted to ICU within 48 hours",
+      "Granularity": "Monthly",
+      "Calculation": "(ICU Readmissions within 48h / Total Discharges) * 100"
+    },
+    {
+      "Column Name": "sepsis_screening_rate",
+      "Data Type": "float",
+      "Description": "Percentage of patients screened for sepsis upon ICU admission",
+      "Granularity": "Monthly",
+      "Calculation": "(Sepsis Screenings / ICU Admissions) * 100"
+    },
+    {
+      "Column Name": "apache_ii_score_avg",
+      "Data Type": "float",
+      "Description": "Average APACHE II score for ICU patients",
+      "Granularity": "Monthly",
+      "Calculation": "Mean of APACHE II scores for all ICU patients"
+    },
+    {
+      "Column Name": "sofa_score_avg",
+      "Data Type": "float",
+      "Description": "Average SOFA score for ICU patients",
+      "Granularity": "Monthly",
+      "Calculation": "Mean of SOFA scores for all ICU patients"
+    }
+  ],
+  "hospital_administration_metrics_table": [
+    {
+      "Column Name": "date",
+      "Data Type": "object",
+      "Description": "The reporting month for administrative metrics",
+      "Granularity": "Monthly",
+      "Calculation": null
+    },
+    {
+      "Column Name": "hospital_id",
+      "Data Type": "object",
+      "Description": "Unique identifier for the hospital or department",
+      "Granularity": "Hospital",
+      "Calculation": null
+    },
+    {
+      "Column Name": "revenue_per_patient_day",
+      "Data Type": "float",
+      "Description": "Revenue generated per patient per day",
+      "Granularity": "Monthly",
+      "Calculation": "Total Revenue / Patient Days"
+    },
+    {
+      "Column Name": "cost_per_case",
+      "Data Type": "float",
+      "Description": "Average cost incurred per case handled",
+      "Granularity": "Monthly",
+      "Calculation": "Total Operational Cost / Number of Cases"
+    },
+    {
+      "Column Name": "staff_turnover_rate",
+      "Data Type": "float",
+      "Description": "Percentage of staff who left during the period",
+      "Granularity": "Monthly",
+      "Calculation": "(Number of Departures / Average Staff Count) * 100"
+    },
+    {
+      "Column Name": "avg_staff_overtime_hours",
+      "Data Type": "float",
+      "Description": "Average overtime hours worked per staff member",
+      "Granularity": "Monthly",
+      "Calculation": "Total Overtime Hours / Staff Count"
+    },
+    {
+      "Column Name": "billing_accuracy_rate",
+      "Data Type": "float",
+      "Description": "Percentage of accurate bills issued",
+      "Granularity": "Monthly",
+      "Calculation": "(Accurate Bills / Total Bills) * 100"
+    },
+    {
+      "Column Name": "patient_wait_time_admission",
+      "Data Type": "float",
+      "Description": "Average time in minutes patients wait for admission",
+      "Granularity": "Monthly",
+      "Calculation": "Average time from registration to admission"
+    },
+    {
+      "Column Name": "overall_patient_satisfaction",
+      "Data Type": "float",
+      "Description": "Average patient satisfaction score (1\u00e2\u20ac\u201c5 scale)",
+      "Granularity": "Monthly",
+      "Calculation": "Survey-based average score"
+    },
+    {
+      "Column Name": "compliance_audit_score",
+      "Data Type": "float",
+      "Description": "Score from internal or external compliance audits",
+      "Granularity": "Monthly",
+      "Calculation": "Weighted audit score based on compliance factors"
+    },
+    {
+      "Column Name": "claims_processing_time_days",
+      "Data Type": "float",
+      "Description": "Average number of days to process insurance claims",
+      "Granularity": "Monthly",
+      "Calculation": "Total Days to Process / Number of Claims"
+    }
+  ],
+  "patient_safety_metrics_table": [
+    {
+      "Column Name": "date",
+      "Data Type": "object",
+      "Description": "Date of metric measurement",
+      "Granularity": "Daily",
+      "Calculation": "Direct from source system"
+    },
+    {
+      "Column Name": "department_id",
+      "Data Type": "object",
+      "Description": "Unique identifier for department",
+      "Granularity": "Department-level",
+      "Calculation": "Direct from source system"
+    },
+    {
+      "Column Name": "patient_safety_incidents",
+      "Data Type": "int64",
+      "Description": "Number of reported patient safety incidents",
+      "Granularity": "Department-level",
+      "Calculation": "Total safety incidents logged per department"
+    },
+    {
+      "Column Name": "falls_rate_per_1000_patient_days",
+      "Data Type": "float64",
+      "Description": "Number of patient falls per 1,000 patient-days",
+      "Granularity": "Department-level",
+      "Calculation": "(# Falls / Patient Days) * 1000"
+    },
+    {
+      "Column Name": "pressure_ulcer_incidence",
+      "Data Type": "float64",
+      "Description": "Incidence rate of pressure ulcers in the department",
+      "Granularity": "Department-level",
+      "Calculation": "(# Pressure Ulcer Cases / Patient Population) * 100"
+    },
+    {
+      "Column Name": "medication_error_count",
+      "Data Type": "int64",
+      "Description": "Number of medication errors reported",
+      "Granularity": "Department-level",
+      "Calculation": "Count of reported medication errors"
+    },
+    {
+      "Column Name": "hand_hygiene_compliance_pct",
+      "Data Type": "float64",
+      "Description": "Percentage compliance with hand hygiene protocols",
+      "Granularity": "Department-level",
+      "Calculation": "(# Compliant Observations / Total Observations) * 100"
+    },
+    {
+      "Column Name": "patient_complaints_count",
+      "Data Type": "int64",
+      "Description": "Number of formal patient complaints received",
+      "Granularity": "Department-level",
+      "Calculation": "Count of formal complaints by patients"
+    },
+    {
+      "Column Name": "staff_training_completion_pct",
+      "Data Type": "float64",
+      "Description": "Percentage of staff who completed safety training",
+      "Granularity": "Department-level",
+      "Calculation": "(# Staff Completed Training / Total Staff) * 100"
+    },
+    {
+      "Column Name": "safety_audit_score",
+      "Data Type": "float64",
+      "Description": "Score from internal safety audit (out of 100)",
+      "Granularity": "Department-level",
+      "Calculation": "Average score from safety compliance audits"
+    }
+  ],
+  "financial_metrics_table": [
+    {
+      "Column Name": "date",
+      "Data Type": "object",
+      "Description": "The reporting month for financial metrics",
+      "Granularity": "Monthly",
+      "Calculation": null
+    },
+    {
+      "Column Name": "hospital_id",
+      "Data Type": "object",
+      "Description": "Unique identifier for the hospital or department",
+      "Granularity": "Hospital",
+      "Calculation": null
+    },
+    {
+      "Column Name": "total_revenue",
+      "Data Type": "float",
+      "Description": "Total revenue generated in the month",
+      "Granularity": "Monthly",
+      "Calculation": "Sum of all revenue streams (billing, insurance, etc.)"
+    },
+    {
+      "Column Name": "accounts_receivable_days",
+      "Data Type": "int",
+      "Description": "Average number of days to collect payment",
+      "Granularity": "Monthly",
+      "Calculation": "(Accounts Receivable / Average Daily Revenue)"
+    },
+    {
+      "Column Name": "denial_rate",
+      "Data Type": "float",
+      "Description": "Percentage of claims denied by insurers",
+      "Granularity": "Monthly",
+      "Calculation": "(Number of denied claims / Total claims) * 100"
+    },
+    {
+      "Column Name": "avg_cost_per_procedure",
+      "Data Type": "float",
+      "Description": "Average cost incurred per medical procedure",
+      "Granularity": "Monthly",
+      "Calculation": "(Total cost / Number of procedures)"
+    },
+    {
+      "Column Name": "insurance_claim_approval_rate",
+      "Data Type": "float",
+      "Description": "Percentage of insurance claims approved",
+      "Granularity": "Monthly",
+      "Calculation": "(Approved claims / Submitted claims) * 100"
+    },
+    {
+      "Column Name": "collection_rate",
+      "Data Type": "float",
+      "Description": "Percentage of total revenue successfully collected",
+      "Granularity": "Monthly",
+      "Calculation": "(Collected Revenue / Billed Revenue) * 100"
+    },
+    {
+      "Column Name": "expense_ratio",
+      "Data Type": "float",
+      "Description": "Proportion of expenses relative to revenue",
+      "Granularity": "Monthly",
+      "Calculation": "(Total Expenses / Total Revenue)"
+    },
+    {
+      "Column Name": "budget_variance",
+      "Data Type": "float",
+      "Description": "Difference between actual and budgeted expenses",
+      "Granularity": "Monthly",
+      "Calculation": "(Actual Expense - Budgeted Expense) / Budgeted Expense"
+    }
+  ],
+  "patient_experience_metrics_table": [
+    {
+      "Column Name": "date",
+      "Data Type": "object",
+      "Description": "Date of the recorded metrics",
+      "Granularity": "Daily",
+      "Calculation": "Direct entry or calculated based on survey results"
+    },
+    {
+      "Column Name": "hospital_id",
+      "Data Type": "object",
+      "Description": "Unique identifier for the hospital",
+      "Granularity": "Hospital-level",
+      "Calculation": "Direct entry"
+    },
+    {
+      "Column Name": "net_promoter_score",
+      "Data Type": "float64",
+      "Description": "Net Promoter Score indicating likelihood of patient recommendation (0-100)",
+      "Granularity": "Hospital-level daily",
+      "Calculation": "Derived from patient survey responses"
+    },
+    {
+      "Column Name": "patient_satisfaction_score",
+      "Data Type": "float64",
+      "Description": "Overall patient satisfaction score (typically on a scale of 1 to 5)",
+      "Granularity": "Hospital-level daily",
+      "Calculation": "Aggregated average score from surveys"
+    },
+    {
+      "Column Name": "avg_resolution_time_hours",
+      "Data Type": "float64",
+      "Description": "Average time taken to resolve patient issues (in hours)",
+      "Granularity": "Hospital-level daily",
+      "Calculation": "Calculated as average resolution time per case"
+    },
+    {
+      "Column Name": "patient_recommendation_pct",
+      "Data Type": "float64",
+      "Description": "Percentage of patients who would recommend the hospital",
+      "Granularity": "Hospital-level daily",
+      "Calculation": "Calculated from survey data on patient recommendations"
+    },
+    {
+      "Column Name": "avg_response_time_minutes",
+      "Data Type": "float64",
+      "Description": "Average time taken to respond to patient inquiries (in minutes)",
+      "Granularity": "Hospital-level daily",
+      "Calculation": "Average time from issue raised to first response"
+    },
+    {
+      "Column Name": "patient_education_completion_pct",
+      "Data Type": "float64",
+      "Description": "Percentage of patients who completed educational materials",
+      "Granularity": "Hospital-level daily",
+      "Calculation": "Percentage of patients who completed assigned educational content"
+    }
+  ]
+}

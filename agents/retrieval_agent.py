@@ -1,27 +1,29 @@
+import json
 import logging
 import traceback
-import json
-
-from typing import TypedDict, Optional
-from openai import AzureOpenAI
+from typing import Optional, TypedDict
 
 from azure.core.credentials import AzureKeyCredential
+from azure.search.documents import IndexDocumentsBatch, SearchClient
 from azure.search.documents.models import VectorizedQuery
-from azure.search.documents import SearchClient, IndexDocumentsBatch
+from openai import AzureOpenAI
 
-from core.config import (AOAI_ENDPOINT, AOAI_KEY, AOAI_API_VERSION,
-                         AOAI_EMBEDDING_MODEL_DEPLOYMENT,
-                         SEARCH_ENDPOINT, SEARCH_KEY, INDEX_NAME)
-
+from core.config import (
+    AOAI_API_VERSION,
+    AOAI_EMBEDDING_MODEL_DEPLOYMENT,
+    AOAI_ENDPOINT,
+    AOAI_KEY,
+    INDEX_NAME,
+    SEARCH_ENDPOINT,
+    SEARCH_KEY,
+)
 
 # Get logger for this module
 logger = logging.getLogger("agents.retrieval_agent")
 
 # Initialize Azure OpenAI client
 client = AzureOpenAI(
-  api_key=AOAI_KEY,
-  api_version=AOAI_API_VERSION,
-  azure_endpoint=AOAI_ENDPOINT
+    api_key=AOAI_KEY, api_version=AOAI_API_VERSION, azure_endpoint=AOAI_ENDPOINT
 )
 
 
@@ -29,8 +31,11 @@ def generate_embedding(text, model=AOAI_EMBEDDING_MODEL_DEPLOYMENT):
     """Generates a vector embedding for a given piece of text."""
     try:
         # OpenAI API does not accept empty strings, so we send a space instead
-        return client.embeddings.create(input=[text if text.strip() else " "],
-                                        model=model).data[0].embedding
+        return (
+            client.embeddings.create(input=[text if text.strip() else " "], model=model)
+            .data[0]
+            .embedding
+        )
     except Exception as e:
         print(f"Error generating embedding for text: '{text[:50]}...'. Error: {e}")
         return None
@@ -48,13 +53,16 @@ class RetrievalState(TypedDict):
 
 
 def retrieval_agent(state: RetrievalState) -> RetrievalState:
-    logger.info("Starting retrieval agent with query: %s", state.get("query", "No query provided"))
+    logger.info(
+        "Starting retrieval agent with query: %s",
+        state.get("query", "No query provided"),
+    )
     logger.debug("Current state: %s", json.dumps(state, default=str))
-    
+
     try:
         # Set current node
         state["current_node"] = "retrieval"
-        
+
         user_query = state.get("query", "No query provided")
         user_role = state.get("user_role", "No role provided")
 
@@ -63,13 +71,15 @@ def retrieval_agent(state: RetrievalState) -> RetrievalState:
 
         # 2. Perform the vector search with a role filter
         if query_vector:
-            vector_query = VectorizedQuery(vector=query_vector,
-                                           k_nearest_neighbors=3,
-                                           fields="content_vector")
-            
-            search_client = SearchClient(endpoint=SEARCH_ENDPOINT,
-                                         index_name=INDEX_NAME,
-                                         credential=AzureKeyCredential(SEARCH_KEY))
+            vector_query = VectorizedQuery(
+                vector=query_vector, k_nearest_neighbors=3, fields="content_vector"
+            )
+
+            search_client = SearchClient(
+                endpoint=SEARCH_ENDPOINT,
+                index_name=INDEX_NAME,
+                credential=AzureKeyCredential(SEARCH_KEY),
+            )
 
             # *** FINAL CODE CHANGE ***
             # Using a standard text search (`search_text`) on the `accessible_to_roles`
@@ -86,7 +96,7 @@ def retrieval_agent(state: RetrievalState) -> RetrievalState:
             logger.info(f"Query: '{user_query}'")
             logger.info(f"Role: '{user_role}'\n")
             logger.info("Relevant results from our knowledge base for this role:\n")
-            
+
             # Check if the iterator has any items before looping
             results_list = list(results)
             if not results_list:
@@ -97,7 +107,7 @@ def retrieval_agent(state: RetrievalState) -> RetrievalState:
                     {
                         "KPI/Metric": item["column_name"],
                         "content": item["content"],
-                        "table_name": item["table_name"]
+                        "table_name": item["table_name"],
                     }
                     for item in results_list
                 ]
@@ -105,15 +115,19 @@ def retrieval_agent(state: RetrievalState) -> RetrievalState:
             logger.info("Could not generate a query vector.")
 
         state["filtered_metadata"] = cleaned_results
-        logger.info("Successfully filtered metadata with %d items", len(cleaned_results))
-        logger.debug("Filtered metadata: %s", json.dumps(cleaned_results, indent=2))
-        
+        logger.info(
+            "Successfully filtered metadata with %d items", len(cleaned_results)
+        )
+        logger.info("Filtered metadata: %s", json.dumps(cleaned_results, indent=2))
+
     except Exception as e:
         logger.error("Retrieval failed: %s", str(e), exc_info=True)
         state["filtered_metadata"] = {}
         state["error_message"] = f"Retrieval failed: {str(e)}"
         state["error_trace"] = traceback.format_exc()
-    
-    logger.info("Retrieval agent completed. State updated with %s", 
-                "error" if state.get("error_message") else "success")
+
+    logger.info(
+        "Retrieval agent completed. State updated with %s",
+        "error" if state.get("error_message") else "success",
+    )
     return state

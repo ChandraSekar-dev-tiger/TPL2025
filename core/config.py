@@ -1,6 +1,7 @@
 # core/config.py
 
 import os
+
 from dotenv import load_dotenv
 
 load_dotenv()  # Loads from .env
@@ -19,14 +20,16 @@ AOAI_API_VERSION = os.getenv("AOAI_API_VERSION")
 AOAI_EMBEDDING_MODEL_DEPLOYMENT = os.getenv("AOAI_EMBEDDING_MODEL_DEPLOYMENT")
 
 # Azure AI Search
-SEARCH_ENDPOINT =os.getenv("SEARCH_ENDPOINT")
-SEARCH_KEY =os.getenv("SEARCH_KEY")
+SEARCH_ENDPOINT = os.getenv("SEARCH_ENDPOINT")
+SEARCH_KEY = os.getenv("SEARCH_KEY")
 INDEX_NAME = os.getenv("INDEX_NAME")
 
 # Databricks configs
 DATABRICKS_SERVER_HOSTNAME = os.getenv("DATABRICKS_SERVER_HOSTNAME")
 DATABRICKS_HTTP_PATH = os.getenv("DATABRICKS_HTTP_PATH")
 DATABRICKS_ACCESS_TOKEN = os.getenv("DATABRICKS_ACCESS_TOKEN")
+catalog_name = "dbx-azure-catalog"
+schema_name = "code_claws"
 
 DATA_PATH = "/mnt/data/delta/"
 ROLE = "non_clinical_staff"
