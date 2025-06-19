@@ -1,6 +1,6 @@
 import asyncio
 import logging
-
+from guardrails import apply_guardrails 
 from core.logging_config import setup_logging
 from core.session_manager import (
     create_session_id,
@@ -34,6 +34,29 @@ async def query_agent(data: dict):
 
     # Retrieve previous session state or start fresh
     session_state = get_session_state(session_id) or {}
+    # apply guardrails
+    table_name = session_state.get("current_table", "")  # If available
+    generated_code = session_state.get("code", "")       # If previously stored
+
+    violations = apply_guardrails(
+        query=user_query,
+        role=user_role,
+        intent=session_state.get("intent", ""),
+        table=table_name,
+        code=generated_code,
+    )
+    if violations:
+        logger.warning(f"Query blocked due to guardrail violations: {violations}")
+        return {
+            "session_id": session_id,
+            "result": {
+                "report": {
+                    "report_text": "Your query was blocked due to policy violations.",
+                    "violations": violations
+                },
+                "session_state": session_state,
+            },
+        }
 
     # Run the pipeline with session-aware state and enable logical checks
     output = await run_agent_pipeline(
