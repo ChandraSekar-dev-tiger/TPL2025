@@ -1,5 +1,5 @@
-import re
 import logging
+import re
 
 logger = logging.getLogger("agent.guardrails")
 
@@ -35,7 +35,7 @@ def apply_guardrails(query: str, role: str, intent: str = "", table: str = "", c
     Returns a list of violation messages (empty list = no violations).
     """
     violations = []
-
+    logger.info("Apply uardrails function")
     # 1. Check for SQL injection / dangerous code
     for keyword in GUARDRAIL_POLICIES["blocked_keywords"]:
         if keyword in code.upper():
@@ -59,6 +59,8 @@ def apply_guardrails(query: str, role: str, intent: str = "", table: str = "", c
     allowed_tables = GUARDRAIL_POLICIES["role_permissions"].get(role, [])
     if "*" not in allowed_tables and table and table not in allowed_tables:
         violations.append(f"Role '{role}' is not authorized to access table '{table}'")
+
+    logger.info("Checking for violations done")
 
     # Log violations
     if violations:

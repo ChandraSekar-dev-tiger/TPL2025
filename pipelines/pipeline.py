@@ -1,17 +1,19 @@
-from typing import TypedDict, Optional, Any, Union
-from langgraph.graph import StateGraph, END
 import logging
 import traceback
+from typing import Any, Optional, TypedDict, Union
 
-from agents.intent_agent import intent_recognition_agent, IntentState
-from agents.retrieval_agent import retrieval_agent, RetrievalState
-from agents.codegen_agent import code_generation_agent, CodegenState
-from agents.logical_check_agent import logical_check_agent, LogicalCheckState
-from agents.execution_agent import execution_agent, ExecutionState
-from agents.interpretation_agent import interpretation_agent, InterpretationState
-from agents.reporting_agent import reporting_agent, ReportingState
+from langgraph.graph import END, StateGraph
+
+from agents.codegen_agent import CodegenState, code_generation_agent
+from agents.execution_agent import ExecutionState, execution_agent
+from agents.intent_agent import IntentState, intent_recognition_agent
+from agents.interpretation_agent import InterpretationState, interpretation_agent
+from agents.logical_check_agent import LogicalCheckState, logical_check_agent
+from agents.reporting_agent import ReportingState, reporting_agent
+from agents.retrieval_agent import RetrievalState, retrieval_agent
 
 logger = logging.getLogger(__name__)
+
 
 # Define the combined state schema that includes all agent states
 class AgentState(TypedDict):
@@ -36,66 +38,78 @@ class AgentState(TypedDict):
     logical_errors: Optional[list]  # List of logical errors found
     syntax_errors: Optional[list]  # List of syntax errors found
 
+
 def should_continue(state: AgentState) -> Union[str, bool]:
     """Determine the next node based on the current state."""
     try:
         current_node = state.get("current_node", "intent_recognition")
-        
+
         if current_node == "intent_recognition":
             if state.get("relevance", 0) == 0:
                 logger.warning("Non-healthcare query detected")
                 return "error_reporting"
             return True
-            
+
         elif current_node == "retrieval":
             if not state.get("filtered_metadata"):
                 logger.warning("No metadata retrieved")
                 return "error_reporting"
             return True
-            
+
         elif current_node == "code_generation":
             attempts = state.get("codegen_attempts", 0)
             max_attempts = state.get("max_codegen_attempts", 3)
-            
+
             # If we have an error message or no code, and we haven't exceeded max attempts
-            if (state.get("error_message") or not state.get("code")) and attempts < max_attempts:
-                logger.warning(f"Code generation failed on attempt {attempts}, retrying...")
+            if (
+                state.get("error_message") or not state.get("code")
+            ) and attempts < max_attempts:
+                logger.warning(
+                    f"Code generation failed on attempt {attempts}, retrying..."
+                )
                 return "code_generation"  # Retry code generation
             elif attempts >= max_attempts:
                 logger.error("Maximum code generation attempts reached")
                 return "error_reporting"
             return True
-            
+
         elif current_node == "logical_check":
             if state.get("enable_logical_check", False):
                 if state.get("logical_errors"):
                     attempts = state.get("codegen_attempts", 0)
                     max_attempts = state.get("max_codegen_attempts", 3)
                     if attempts < max_attempts:
-                        logger.warning("Logical errors found, returning to code generation")
+                        logger.warning(
+                            "Logical errors found, returning to code generation"
+                        )
                         return "code_generation"
                     else:
                         logger.error("Maximum code generation attempts reached")
                         return "error_reporting"
             return True
-            
+
         elif current_node == "execution":
             if not state.get("success", True):
                 error_msg = state.get("error_message", "")
                 syntax_errors = state.get("syntax_errors", [])
-                
+
                 # Check for syntax errors in both error message and syntax_errors list
                 has_syntax_error = (
-                    any(err.get("type") in ["SyntaxError", "IndentationError"] for err in syntax_errors) or
-                    "SyntaxError" in error_msg or 
-                    "IndentationError" in error_msg
+                    any(
+                        err.get("type") in ["SyntaxError", "IndentationError"]
+                        for err in syntax_errors
+                    )
+                    or "SyntaxError" in error_msg
+                    or "IndentationError" in error_msg
                 )
-                
+
                 if has_syntax_error:
                     attempts = state.get("codegen_attempts", 0)
                     max_attempts = state.get("max_codegen_attempts", 3)
                     if attempts < max_attempts:
-                        logger.warning("Syntax error found, returning to code generation")
+                        logger.warning(
+                            "Syntax error found, returning to code generation"
+                        )
                         return "code_generation"
                     else:
                         logger.error("Maximum code generation attempts reached")
@@ -104,7 +118,7 @@ def should_continue(state: AgentState) -> Union[str, bool]:
                     logger.warning(f"Execution failed: {error_msg}")
                     return "error_reporting"
             return True
-            
+
         return True
     except Exception as e:
         logger.error(f"Error in should_continue: {str(e)}")
@@ -112,12 +126,13 @@ def should_continue(state: AgentState) -> Union[str, bool]:
         state["error_trace"] = traceback.format_exc()
         return "error_reporting"
 
+
 def create_error_report(state: AgentState) -> AgentState:
     """Generate an error report when something goes wrong."""
     try:
         error_msg = state.get("error_message", "Unknown error occurred")
         error_trace = state.get("error_trace", "")
-        
+
         if state.get("relevance", 0) == 0:
             reasoning = state.get("reasoning", "")
             state["report_text"] = reasoning
@@ -130,7 +145,7 @@ def create_error_report(state: AgentState) -> AgentState:
             state["report_text"] = f"Error: {error_msg}"
             if error_trace:
                 state["report_text"] += f"\n\nTechnical Details:\n{error_trace}"
-        
+
         logger.error(f"Error report generated: {error_msg}")
         return state
     except Exception as e:
@@ -139,10 +154,14 @@ def create_error_report(state: AgentState) -> AgentState:
         state["error_trace"] = traceback.format_exc()
         return state
 
+
 async def run_agent_pipeline(
-        user_query: str, user_role: str,
-        session_state: dict,
-        max_codegen_attempts: int = 3, enable_logical_check: bool = False) -> dict:
+    user_query: str,
+    user_role: str,
+    session_state: dict,
+    max_codegen_attempts: int = 3,
+    enable_logical_check: bool = False,
+) -> dict:
     try:
         # Initialize the graph with our combined state schema
         graph = StateGraph(AgentState)
@@ -150,7 +169,9 @@ async def run_agent_pipeline(
         # Add nodes for each agent
         graph.add_node("intent_recognition", intent_recognition_agent)
         graph.add_node("retrieval", retrieval_agent)
-        graph.add_node("code_generation", code_generation_agent)
+        graph.add_node(
+            "code_generation", lambda state: code_generation_agent(state, user_role)
+        )
         graph.add_node("logical_check", logical_check_agent)
         graph.add_node("execution", execution_agent)
         graph.add_node("interpretation", interpretation_agent)
@@ -164,19 +185,13 @@ async def run_agent_pipeline(
         graph.add_conditional_edges(
             "intent_recognition",
             should_continue,
-            {
-                True: "retrieval",
-                "error_reporting": "error_reporting"
-            }
+            {True: "retrieval", "error_reporting": "error_reporting"},
         )
-        
+
         graph.add_conditional_edges(
             "retrieval",
             should_continue,
-            {
-                True: "code_generation",
-                "error_reporting": "error_reporting"
-            }
+            {True: "code_generation", "error_reporting": "error_reporting"},
         )
 
         # Add edges for code generation with retry support
@@ -186,8 +201,8 @@ async def run_agent_pipeline(
             {
                 True: "logical_check" if enable_logical_check else "execution",
                 "code_generation": "code_generation",  # Add self-loop for retries
-                "error_reporting": "error_reporting"
-            }
+                "error_reporting": "error_reporting",
+            },
         )
 
         if enable_logical_check:
@@ -197,8 +212,8 @@ async def run_agent_pipeline(
                 {
                     True: "execution",
                     "code_generation": "code_generation",  # Add edge back to code generation
-                    "error_reporting": "error_reporting"
-                }
+                    "error_reporting": "error_reporting",
+                },
             )
 
         graph.add_conditional_edges(
@@ -207,8 +222,8 @@ async def run_agent_pipeline(
             {
                 True: "interpretation",
                 "code_generation": "code_generation",  # Add edge back to code generation for retries
-                "error_reporting": "error_reporting"
-            }
+                "error_reporting": "error_reporting",
+            },
         )
 
         graph.add_edge("interpretation", "reporting")
@@ -232,11 +247,17 @@ async def run_agent_pipeline(
             "insight": session_state.get("insight"),
             "report_text": session_state.get("report_text"),
             "error_trace": session_state.get("error_trace"),
-            "codegen_attempts": session_state.get("codegen_attempts", 0),  # Preserve attempts from session
+            "codegen_attempts": session_state.get(
+                "codegen_attempts", 0
+            ),  # Preserve attempts from session
             "max_codegen_attempts": max_codegen_attempts,
             "enable_logical_check": enable_logical_check,
-            "logical_errors": session_state.get("logical_errors", []),  # Preserve logical errors
-            "syntax_errors": session_state.get("syntax_errors", [])  # Preserve syntax errors
+            "logical_errors": session_state.get(
+                "logical_errors", []
+            ),  # Preserve logical errors
+            "syntax_errors": session_state.get(
+                "syntax_errors", []
+            ),  # Preserve syntax errors
         }
 
         # Run the graph
@@ -244,29 +265,37 @@ async def run_agent_pipeline(
         result = await compiled_graph.ainvoke(initial_state)
 
         # Update session state with the final state
-        session_state.update({
-            "codegen_attempts": result.get("codegen_attempts", 0),
-            "query": result.get("query"),
-            "user_role": result.get("user_role"),
-            "relevance": result.get("relevance", 0),
-            "reasoning": result.get("reasoning", ""),
-            "filtered_metadata": result.get("filtered_metadata"),
-            "code": result.get("code"),
-            "language": result.get("language"),
-            "result": result.get("result"),
-            "success": result.get("success"),
-            "error_message": result.get("error_message"),
-            "insight": result.get("insight"),
-            "report_text": result.get("report_text"),
-            "error_trace": result.get("error_trace"),
-            "logical_errors": result.get("logical_errors", []),  # Preserve logical errors
-            "syntax_errors": result.get("syntax_errors", [])  # Preserve syntax errors
-        })
+        session_state.update(
+            {
+                "codegen_attempts": result.get("codegen_attempts", 0),
+                "query": result.get("query"),
+                "user_role": result.get("user_role"),
+                "relevance": result.get("relevance", 0),
+                "reasoning": result.get("reasoning", ""),
+                "filtered_metadata": result.get("filtered_metadata"),
+                "code": result.get("code"),
+                "language": result.get("language"),
+                "result": result.get("result"),
+                "success": result.get("success"),
+                "error_message": result.get("error_message"),
+                "insight": result.get("insight"),
+                "report_text": result.get("report_text"),
+                "error_trace": result.get("error_trace"),
+                "logical_errors": result.get(
+                    "logical_errors", []
+                ),  # Preserve logical errors
+                "syntax_errors": result.get(
+                    "syntax_errors", []
+                ),  # Preserve syntax errors
+            }
+        )
 
         # Ensure we return the updated session state
         return {
-            "report": {"report_text": result.get("report_text", "No report generated.")},
-            "session_state": session_state  # Return the updated session state
+            "report": {
+                "report_text": result.get("report_text", "No report generated.")
+            },
+            "session_state": session_state,  # Return the updated session state
         }
 
     except Exception as e:
@@ -276,5 +305,5 @@ async def run_agent_pipeline(
             "report": {
                 "report_text": f"Critical pipeline error: {str(e)}\n\nTechnical Details:\n{traceback.format_exc()}"
             },
-            "session_state": session_state  # Return the original session state on error
+            "session_state": session_state,  # Return the original session state on error
         }

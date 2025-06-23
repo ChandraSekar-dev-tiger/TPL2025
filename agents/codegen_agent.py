@@ -8,6 +8,7 @@ from typing import Optional, TypedDict
 import pandas as pd
 
 from agents.llm_client import llm_client
+from guardrail_copy import apply_guardrails
 from prompts.prompt_templates import codegen_prompt_template
 
 logger = logging.getLogger("agents.codegen_agent")
@@ -35,7 +36,7 @@ class CodegenState(TypedDict):
     syntax_errors: Optional[list]
 
 
-async def code_generation_agent(state: CodegenState) -> CodegenState:
+def code_generation_agent(state: CodegenState, role: str) -> CodegenState:
     """Generate code based on the query and metadata."""
     try:
         # Get current attempt number
@@ -93,6 +94,28 @@ async def code_generation_agent(state: CodegenState) -> CodegenState:
             state["code"] = query
             state["language"] = "sql"
             state["error_message"] = None
+
+            logger.info("Applying guardrails")
+            violations = apply_guardrails(
+                query=state["query"],
+                role=role,
+                table=table_names,
+                code=query,
+            )
+            if violations:
+                logger.warning(
+                    f"Query blocked due to guardrail violations: {violations}"
+                )
+                return {
+                    "session_id": None,
+                    "result": {
+                        "report": {
+                            "report_text": "Your query was blocked due to policy violations.",
+                            "violations": violations,
+                        },
+                        "session_state": None,
+                    },
+                }
 
         else:
             print("No SQL query found.")

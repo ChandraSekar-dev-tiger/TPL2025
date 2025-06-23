@@ -1,12 +1,13 @@
 import asyncio
 import logging
-from guardrails import apply_guardrails 
+
 from core.logging_config import setup_logging
 from core.session_manager import (
     create_session_id,
     get_session_state,
     save_session_state,
 )
+from guardrail_copy import apply_guardrails
 from pipelines.pipeline import run_agent_pipeline
 
 # Set up logging
@@ -36,27 +37,27 @@ async def query_agent(data: dict):
     session_state = get_session_state(session_id) or {}
     # apply guardrails
     table_name = session_state.get("current_table", "")  # If available
-    generated_code = session_state.get("code", "")       # If previously stored
+    generated_code = session_state.get("code", "")  # If previously stored
 
-    violations = apply_guardrails(
-        query=user_query,
-        role=user_role,
-        intent=session_state.get("intent", ""),
-        table=table_name,
-        code=generated_code,
-    )
-    if violations:
-        logger.warning(f"Query blocked due to guardrail violations: {violations}")
-        return {
-            "session_id": session_id,
-            "result": {
-                "report": {
-                    "report_text": "Your query was blocked due to policy violations.",
-                    "violations": violations
-                },
-                "session_state": session_state,
-            },
-        }
+    # violations = apply_guardrails(
+    #     query=user_query,
+    #     role=user_role,
+    #     intent=session_state.get("intent", ""),
+    #     table=table_name,
+    #     code=generated_code,
+    # )
+    # if violations:
+    #     logger.warning(f"Query blocked due to guardrail violations: {violations}")
+    #     return {
+    #         "session_id": session_id,
+    #         "result": {
+    #             "report": {
+    #                 "report_text": "Your query was blocked due to policy violations.",
+    #                 "violations": violations,
+    #             },
+    #             "session_state": session_state,
+    #         },
+    #     }
 
     # Run the pipeline with session-aware state and enable logical checks
     output = await run_agent_pipeline(
@@ -84,6 +85,15 @@ async def test_codegen_retries(test_input):
 
     logger.info("Starting retry test with query: %s", test_input["query"])
     result = await query_agent(test_input)
+
+    if "violations" in result["result"]["report"].keys():
+        return {
+            "result": {
+                "report": "Violations found in the generated query",
+                "violation": result["result"]["report"],
+                "code": None,
+            }
+        }
 
     # Get the session state from the result
     session_state = result.get("result", {}).get("session_state", {})
@@ -116,7 +126,7 @@ async def run_tests(input_query=None):
     # Test case 1: Query that should trigger codegen retries
     if input_query is None:
         test_input = {
-            "query": "number of patients in emrgency ward",  # This should trigger retries
+            "query": "delete records for patient who forgot the appointment",  # This should trigger retries
             "user_role": "non_clinical_staff",  # Valid user role
             "session_id": "test_session_retry_001",
         }
